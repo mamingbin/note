@@ -1,0 +1,301 @@
+二进制（rpm|通用的）
+二进制的源码包 xxx.src.rpm  rebuild --rebuild xxx.src.rpm 
+源码包
+
+5.6.20 rpm
+data_dir:/var/lib/mysql
+install_dir:/usr
+
+/etc/init.d/mysql start|stop|reload|status
+mysqld_safe &
+
+systemctl start|stop... mysql
+
+/usr/bin/mysql_install_db  初始化mysql数据库 
+
+/etc/my.cnf
+[mysqld]
+datadir=/var/lib/mysql
+port=3307
+...
+[mysqld_safe]
+xxxx
+
+mysqld_safe --datadir=xxx --basedir=xxx &
+
+# mysqladmin -u root password 'new-password' -pold-password
+mysql> update mysql.user set password=password("123") where user='root' and host='localhost';
+mysql> flush privileges;
+
+mysql> set password for 'root'@'localhost'=password("123");
+
+
+忘记mysql数据库的root密码：
+1、修改配置文件跳过授权表
+vim /etc/my.cnf
+[mysqld]
+.....
+skip-grant-tables
+
+service mysql restart
+
+# mysql
+
+mysql> update mysql.user set password=password("123") where user='root' and host='localhost';
+mysql> flush privileges;
+
+2、通过mysqld_safe 脚本启动mysql数据库并传递参数
+mysqld_safe --skip-grant-tables &
+
+# mysql
+
+
+通用的二进制包安装：
+默认：
+install:/usr/local/mysql
+datadir:/usr/local/mysql/data
+port:3306
+socket:/tmp/mysql.sock
+
+需求：
+mysql 5.6.24
+basedir=/mysql24
+datadir=/mysql24/data
+socket:/tmp/mysql.sock
+
+
+步骤：
+1、创建相应的用户和组（看情况）
+# id mysql
+uid=27(mysql) gid=27(mysql) groups=27(mysql)
+2、创建相应的数据目录
+mkdir /mysql24
+3、将相应的软件包解压到安装目录里
+tar -xf mysql-5.6.24-linux-glibc2.5-x86_64.tar.gz -C /usr/src
+mv /usr/src/mysql-5.6.24-linux-glibc2.5-x86_64/* /mysql24/
+4、更改文件的拥有者和所属组为mysql
+# chown -R mysql. /mysql24
+5、初始化mysql数据库
+[root@node1 mysql24]# scripts/mysql_install_db --user=mysql --basedir=/mysql24 --datadir=/mysql24/data
+
+注意：
+当前有一个5.6.19版本的数据库正在启动，并且数据目录/var/lib/mysql,所以初始化数据库的时候需要加参数指定安装路径和数据目录
+
+6、启动5.6.24版本的数据库
+/mysql24/bin/mysqld_safe --user=mysql &
+注意：
+因为当前已经有5.6.19版本的数据库在运行，并且/etc/my.cnf文件里指定了默认的数据目录/var/lib/mysql,所以启动后的数据目录依然是/var/lib/mysql
+
+以上启动虽然没有报错，但是有问题，怎么解决？
+mv /etc/my.cnf /etc/my.cnf.bak
+
+7、将脚本文件拷贝到/etc/init.d/mysql24
+# cp support-files/mysql.server /etc/init.d/mysql24
+
+[root@node1 mysql24]# service mysql24 start
+/etc/init.d/mysql24: line 276: cd: /usr/local/mysql: No such file or directory
+Starting MySQLCouldn't find MySQL server (/usr/local/mysql/[FAILED]ld_safe)
+原因：脚本文件使用了默认的安装路径
+解决：vim /etc/init.d/mysql24
+...
+basedir=/mysql24
+datadir=/mysql24/data
+
+
+[root@node1 data]# service mysql24 restart
+MySQL server PID file could not be found!                  [FAILED]
+Starting MySQL.....The server quit without updating PID fil[FAILED]l24/data/node1.uplook.com.pid).
+
+2017-09-04 10:42:18 5278 [ERROR] Can't start server: Bind on TCP/IP port: Address already in use
+2017-09-04 10:42:18 5278 [ERROR] Do you already have another mysqld server running on port: 3306 ?
+2017-09-04 10:42:18 5278 [ERROR] Aborting
+
+原因：已经有一个进程在运行
+解决：停止
+
+
+客户端连接mysql数据：
+# mysql
+ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/lib/mysql/mysql.sock' (2)
+解决办法：
+1、直接使用当前5.6.24版本的mysql客户端工具
+/mysql24/bin/mysql
+
+2、指定socket文件路径
+mysql -S /tmp/mysql.sock
+
+3、创建一个连接文件指向/var/lib/mysql
+ln -s /tmp/mysql.sock /var/lib/mysql/mysql.sock
+
+4、直接修改环境变量
+# export PATH=/mysql24/bin:$PATH  临时
+# mysql
+
+
+怎样启动多实例？
+思路：
+1、两个不同的服务的安装路径和数据目录需不一样
+2、两个不同服务的端口需要不一样
+
+
+两种方法：
+1、脚本启动
+5.6.24
+/etc/my.cnf /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf ~/.my.cnf 
+
+vim /mysql24/my.cnf
+[mysqld]
+basedir=/mysql24
+datadir=/mysql24/data
+port=3307
+socket=/mysql24/mysql.sock
+
+5.6.19
+/etc/my.cnf /etc/mysql/my.cnf /usr/etc/my.cnf ~/.my.cnf 
+
+vim /usr/my.cnf
+[mysqld]
+basedir=/usr
+datadir=/var/lib/mysql
+port=3306
+socket=/var/lib/mysql/mysql.sock
+
+[client]
+xxx
+[mysqld_safe]
+
+# netstat -nltp|grep mysql
+tcp        0      0 :::3307                     :::*                        LISTEN      6465/mysqld         
+tcp        0      0 :::3306                     :::*                        LISTEN      6660/mysqld 
+
+
+问题：
+配置指定[client]不生效？
+
+
+源码包安装：
+1、下载软件包（www.mysql.com）
+# md5sum mysql-5.6.25.tar.gz 
+37664399c91021abe070faa700ecd0ed  mysql-5.6.25.tar.gz
+2、解压软件包到指定的目录
+# tar -xf mysql-5.6.25.tar.gz -C /usr/src/
+3、进入到解压后的目录进行三步曲
+需求：
+basedir:/mysql25
+datadir:/mysql25/data
+port=3308
+etc: /mysql25/etc/
+字符集：utf-8
+....
+
+1> 配置
+vim cmake.sh
+cmake . \
+-DCMAKE_INSTALL_PREFIX=/mysql25 \
+-DMYSQL_DATADIR=/mysql25/data \
+-DENABLED_LOCAL_INFILE=1 \
+-DSYSCONFDIR=/mysql25/etc \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_PARTITION_STORAGE_ENGINE=1 \
+-DMYSQL_UNIX_ADDR=/mysql25/mysql.sock \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_EXTRA_CHARSETS=all \
+-DMYSQL_USER=mysql \
+-DMYSQL_TCP_PORT=3308
+
+# bash cmake.sh 
+cmake.sh: line 1: cmake: command not found
+
+-- Could NOT find Curses  (missing:  CURSES_LIBRARY CURSES_INCLUDE_PATH)
+CMake Error at cmake/readline.cmake:85 (MESSAGE):
+  Curses library not found.  Please install appropriate package,
+
+Makefile
+2> 编译
+Makefile——> make
+make
+3> 安装
+make install
+注意：
+判断安装目录是否存在，如果不存在就会创建它
+
+4、初始化数据库
+注意：
+到数据库的安装目录里进行初始化
+[root@node1 mysql25]# scripts/mysql_install_db --user=mysql
+
+5、启动数据库
+[root@node1 mysql25]# bin/mysqld_safe --user=mysql
+170904 16:26:48 mysqld_safe Logging to '/mysql25/data/node1.uplook.com.err'.
+170904 16:26:48 mysqld_safe Starting mysqld daemon with databases from /mysql25/data
+170904 16:26:52 mysqld_safe mysqld from pid file /mysql25/data/node1.uplook.com.pid ended
+[root@node1 mysql25]# 
+
+2017-09-04 16:26:50 27691 [Note] Server socket created on IP: '::'.
+2017-09-04 16:26:50 27691 [ERROR] Can't start server : Bind on unix socket: Permission denied
+2017-09-04 16:26:50 27691 [ERROR] Do you already have another mysqld server running on socket: /mysql25/mysql.sock ?
+2017-09-04 16:26:50 27691 [ERROR] Aborting
+
+原因：权限问题
+
+6、脚本启动
+[root@node1 mysql25]# cp support-files/mysql.server /etc/init.d/mysql25
+
+service mysql25 start|stop|reload
+
+注意：不需要修改脚本文件，因为已经配置好了
+
+7、创建配置文件
+mkdir /mysql25/etc
+vim /mysql25/etc/my.cnf
+[mysqld]
+basedir=/mysql25
+datadir=/mysql25/data
+port=3308
+socket=/mysql25/mysql.sock
+
+8、安全配置
+# bin/mysql_secure_installation
+
+
+总结：
+1、不管使用哪种方式安装mysql数据库，清晰安装目录和数据目录
+rpm——》/var/lib/mysql    	/usr		  /var/lib/mysql/mysql.sock
+通用——》/usr/local/mysql/data   /usr/local/mysql   /tmp/mysql.sock
+source——》 /usr/local/mysql/data   /usr/local/mysql   /tmp/mysql.sock
+
+2、单台数据库服务器启动多实例，需要端口、数据目录、安装目录以及配置文件不同——》由配置文件决定
+
+3、数据库启动报错 
+# service mysql25 restart
+Shutting down MySQL....                                    [  OK  ]
+Starting MySQL..The server quit without updating PID file ([FAILED]/data/node1.uplook.com.pid).
+
+1》 权限问题（socket、pid文件所在目录|数据目录）
+2》 端口号冲突
+3》 配置文件有问题（两个不同实例共用一个配置文件）
+4》 启动脚本里的basedir和datadir指定有误
+....
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

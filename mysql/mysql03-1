@@ -1,0 +1,88 @@
+DDL:create alter drop truncate...
+DML:insert update delete
+DQL:select
+DCL:grant revoke
+
+
+create database dbname [xxxx];
+drop database dbname;
+alter database dbname default charset gbk;
+
+use dbname;
+create table t_name(c1 int key,c2 varchar(10) not null,c3 datetime,c4 float(5,2) unique,c5 decimal(5,2),....);
+create table t_name select c1,c2 from old_table where 1>2;
+create table t_name select c1,c2 from old_table;
+
+insert into t_name values(...),(...);
+insert into t_name (c1,c3) values(...);
+insert into t_name set c1=xxx,c2=xxx,....;
+insert into t_name select c1,c2 from old_tname;  表结构相同
+insert into t_name (c1,c2) select c1,c2 from old_tname;
+
+update t_name set c1=xxxx where c2=xx;
+
+delete from t_name;
+delete from t_name where c1>4;
+
+
+alter table t_name add c5 varchar(10) after c3;
+....
+
+alter table rename t1_name to t2_name;
+rename table t1 to t2
+
+...
+
+mysql> grant select on db001.* to stu1@10.1.1.254;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> show grants for stu1@10.1.1.254;
++--------------------------------------------------+
+| Grants for stu1@10.1.1.254                       |
++--------------------------------------------------+
+| GRANT USAGE ON *.* TO 'stu1'@'10.1.1.254'        |
+| GRANT SELECT ON `db001`.* TO 'stu1'@'10.1.1.254' |
++--------------------------------------------------+
+2 rows in set (0.00 sec)
+
+mysql> grant insert on db001.t1 to stu1@10.1.1.254;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> show grants for stu1@10.1.1.254;
++-----------------------------------------------------+
+| Grants for stu1@10.1.1.254                          |
++-----------------------------------------------------+
+| GRANT USAGE ON *.* TO 'stu1'@'10.1.1.254'           |
+| GRANT SELECT ON `db001`.* TO 'stu1'@'10.1.1.254'    |
+| GRANT INSERT ON `db001`.`t1` TO 'stu1'@'10.1.1.254' |
++-----------------------------------------------------+
+3 rows in set (0.00 sec)
+
+mysql> 
+mysql> 
+mysql> 
+mysql> 
+mysql> grant update(id,name) on db001.t2 to stu1@10.1.1.254;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> show grants for stu1@10.1.1.254;
++----------------------------------------------------------------+
+| Grants for stu1@10.1.1.254                                     |
++----------------------------------------------------------------+
+| GRANT USAGE ON *.* TO 'stu1'@'10.1.1.254'                      |
+| GRANT SELECT ON `db001`.* TO 'stu1'@'10.1.1.254'               |
+| GRANT INSERT ON `db001`.`t1` TO 'stu1'@'10.1.1.254'            |
+| GRANT UPDATE (name, id) ON `db001`.`t2` TO 'stu1'@'10.1.1.254' |
++----------------------------------------------------------------+
+
+
+
+
+
+

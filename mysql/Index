@@ -1,0 +1,257 @@
+索引、视图、存储过程、触发器与函数（开发）
+
+MySQL索引
+========================================================
+创建索引
+	创建表时创建索引
+	CREATE在已存在的表上创建索引
+	ALTER TABLE在已存在的表上创建索引
+查看并测试索引
+删除索引
+
+一、索引简介
+索引在MySQL中也叫做“键”，是存储引擎用于快速找到记录的一种数据结构。索引对于良好的性能非常关键，
+尤其是当表中的数据量越来越大时，索引对于性能的影响愈发重要。
+索引优化应该是对查询性能优化最有效的手段了。索引能够轻易将查询性能提高好几个数量级。
+索引相当于字典的音序表，如果要查某个字，如果不使用音序表，则需要从几百页中逐页去查。
+
+
+二、索引的分类
+普通索引
+唯一索引
+全文索引
+单列索引
+多列索引
+空间索引
+
+
+索引设计原则：
+1、索引并非越多越好
+2、数据量不多不需要建索引
+3、列中的值变化不多也不需要建索引
+4、经常排序和分组的数据列要建立索引
+5、唯一性约束对应使用唯一性索引
+
+三、准备实验环境
+1. 准备表
+create table t2(id int,name varchar(20));
+
+2. 创建存储过程，实现批量插入记录
+mysql> use school
+mysql> delimiter $$
+mysql> create procedure autoinsert1()
+    -> BEGIN
+    -> declare i int default 1;
+    -> while(i<200000)do
+    -> insert into school.t2 values(i,'ccc');
+    -> set i=i+1;
+    -> end while;
+    -> END$$
+mysql> delimiter ;
+说明：
+默认情况下，不可能等到用户把这些语句全部输入完之后，再执行整段语句。 
+因为mysql一遇到分号，它就要自动执行。 
+这种情况下，就需要事先把delimiter换成其它符号，如//或$$。
+
+查看存储过程的基本信息
+show procedure status\G;
+
+查看存储过程的详细信息
+show create procedure autoinsert1\G;
+
+3. 调用存储过程
+mysql> call autoinsert1();
+
+
+四、创建索引
+＝＝＝创建表时
+语法：
+	CREATE TABLE 表名 (
+				字段名1  数据类型 [完整性约束条件…],
+				字段名2  数据类型 [完整性约束条件…],
+				[UNIQUE | FULLTEXT | SPATIAL ]   INDEX | KEY
+				[索引名]  (字段名[(长度)]  [ASC |DESC]) 
+				);
+
+创建普通索引示例：
+	CREATE TABLE department10 (
+		dept_id INT,
+		dept_name VARCHAR(30) ,
+		comment VARCHAR(50),
+		INDEX index_dept_name (dept_name)
+		);
+
+
+创建唯一索引示例：
+	CREATE TABLE department11 (
+		dept_id INT,
+		dept_name VARCHAR(30) ,
+		comment VARCHAR(50),
+		UNIQUE INDEX index_dept_name (dept_name)
+		);
+
+
+创建全文索引示例：
+	CREATE TABLE department12 (
+		dept_id INT,
+		dept_name VARCHAR(30) ,
+		comment VARCHAR(50),
+		log text,
+		FULLTEXT INDEX index_log (log)
+		);
+
+
+创建多列索引示例：
+	CREATE TABLE department13 (
+		dept_id INT,
+		dept_name VARCHAR(30) ,
+		comment VARCHAR(50),
+		INDEX index_dept_name_comment (dept_name, comment)
+		);
+
+
+===CREATE在已存在的表上创建索引
+语法：
+	CREATE  [UNIQUE | FULLTEXT | SPATIAL ]  INDEX  索引名 
+ 					        ON 表名 (字段名[(长度)]  [ASC |DESC]) ;
+
+创建普通索引示例：
+	CREATE INDEX index_dept_name ON department  (dept_name);
+
+创建唯一索引示例：
+	CREATE UNIQUE INDEX index_dept_name ON department (dept_name);
+
+创建全文索引示例：
+	CREATE FULLTEXT INDEX index_dept_name ON department (dept_name);
+
+创建多列索引示例：
+	CREATE INDEX index_dept_name_ comment ON department (dept_name, comment);
+
+
+===ALTER TABLE在已存在的表上创建索引
+语法：
+	ALTER TABLE 表名 ADD  [UNIQUE | FULLTEXT | SPATIAL ] INDEX
+				   		    索引名 (字段名[(长度)]  [ASC |DESC]) ;
+
+创建普通索引示例：
+	ALTER TABLE department ADD INDEX index_dept_name (dept_name);
+
+创建唯一索引示例：
+	ALTER TABLE department ADD UNIQUE INDEX index_dept_name (dept_name);
+
+
+创建全文索引示例：
+	ALTER TABLE department ADD FULLTEXT INDEX index_dept_name (dept_name);
+
+创建多列索引示例：
+	ALTER TABLE department ADD INDEX index_dept_name_comment (dept_name, comment);
+
+
+
+五、管理索引
+查看索引
+   SHOW CRETAE TABLE 表名\G
+
+测试示例
+   EXPLAIN SELECT * FROM department WHERE dept_name=‘hr’;
+
+删除索引
+  show create table employee6;
+  DROP INDEX 索引名 ON 表名;
+
+
+
+索引测试实验：
+mysql> create table school.t2(id int,name varchar(30));
+Query OK, 0 rows affected (1.33 sec)
+
+
+mysql> desc school.t2;
++-------+-------------+------+-----+---------+-------+
+| Field | Type        | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| id    | int(11)     | YES  |     | NULL    |       |
+| name  | varchar(30) | YES  |     | NULL    |       |
++-------+-------------+------+-----+---------+-------+
+2 rows in set (0.00 sec)
+
+
+mysql> delimiter $$
+mysql> create procedure autoinsert1()
+    -> BEGIN
+    -> declare i int default 1;
+    -> while(i<100000)do
+    -> insert into school.t2 values(i,'ccc');
+    -> set i=i+1;
+    -> end while;
+    -> END$$
+mysql> use school
+Database changed
+mysql> delimiter ;
+
+mysql> call autoinsert1();
+
+
+未创建索引
+mysql> explain select * from school.t2 where id=20000;
++----+-------------+-------+------+---------------+------+---------+------+-------+-------------+
+| id | select_type | table | type | possible_keys | key  | key_len | ref  | rows  | Extra       |
++----+-------------+-------+------+---------------+------+---------+------+-------+-------------+
+|  1 | SIMPLE      | t2    | ALL  | NULL          | NULL | NULL    | NULL | 44848 | Using where |
++----+-------------+-------+------+---------------+------+---------+------+-------+-------------+
+1 row in set (0.00 sec)
+
+
+mysql> create index index_id on school.t2(id);
+Query OK, 0 rows affected (0.91 sec)
+Records: 0  Duplicates: 0  Warnings作用: 0
+
+mysql> explain select * from school.t2 where id=20000;
++----+-------------+-------+------+---------------+----------+---------+-------+------+-------------+
+| id | select_type | table | type | possible_keys | key      | key_len | ref   | rows | Extra       |
++----+-------------+-------+------+---------------+----------+---------+-------+------+-------------+
+|  1 | SIMPLE      | t2    | ref  | index_id      | index_id | 5       | const |    1 | Using where |
++----+-------------+-------+------+---------------+----------+---------+-------+------+-------------+
+1 row in set (0.00 sec)
+
+
+SHOW CREATE TABLE 表名\G
+EXPLAIN： 命令的作用是查看查询优化器如何决定执行查询
+
+
+
+花费时间比较：
+创建索引前
+mysql>  select * from school.t2 where id=20000;
++-------+------+
+| id    | name |
++-------+------+
+| 20000 | ccc  |
++-------+------+
+1 row in set (0.03 sec)
+
+创建索引后
+mysql> create index index_id on school.t2(id);
+Query OK, 0 rows affected (0.39 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+mysql>  select * from school.t2 where id=20000;
++-------+------+
+| id    | name |
++-------+------+
+| 20000 | ccc  |
++-------+------+
+1 row in set (0.00 sec)
+========================================================
+
+
+
+
+
+
+
+
+
+
+
+
+

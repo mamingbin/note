@@ -1,0 +1,91 @@
+Name:	mysql	            软件包的名称，后面可使用%{name}的方式引用
+Version: 5.6.31	            软件的实际版本号，后面可使用%{version}引用
+Release:	1%{?dist}       发布序列号，例如：1linuxing等，标明第几次打包，后面可使用%{release}引用
+Summary: mysql-5.6.31 code to rpm	软件包的内容概要
+
+Group:	applications/database	     软件分组，建议使用标准分组
+License:	GPL     软件授权方式，通常就是GPL
+URL:		 http://www.mysql.com       软件的主页
+Source0:	%{name}-%{version}.tar.gz   源代码包，可以带多个用Source1、Source2等源，后面也可以用%{source1}、%{source2}引用
+BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)  这个是安装或编译时使用的“虚拟目录”
+该参数非常重要，因为在生成rpm的过程中，执行make install时就会把软件安装到上述的路径中，在打包的时候，同样依赖“虚拟目录”为“根目录”进行操作。
+BuildRequires:	cmake,ncurses-devel     编译阶段所依赖的软件包
+
+%description    软件的详细说明
+mysql-5.6.31
+
+%define MYSQL_USER mysql    宏定义
+%define MYSQL_GROUP mysql
+
+
+%prep   预处理脚本
+%setup -n %{name}-%{version} 把源码包解压并放好
+%setup 不加任何选项，仅将软件包打开。 
+%setup -n newdir 将软件包解压在newdir目录。 
+%setup -c 解压缩之前先产生目录。 
+%setup -b num 将第num个source文件解压缩。 
+%setup -T 不使用default的解压缩操作。 
+%setup -T -b 0 将第0个源代码文件解压缩。 
+
+%build      构建包（cmake、make） 
+cmake . \
+-DCMAKE_INSTALL_PREFIX=/usr/local/mysql \
+-DENABLED_LOCAL_INFILE=1 \
+-DMYSQL_DATADIR=/data/mysql \
+-DSYSCONFDIR=/etc \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_PARTITION_STORAGE_ENGINE=1 \
+-DMYSQL_UNIX_ADDR=/data/mysql.sock \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_EXTRA_CHARSETS=gbk,gb2312 \
+-DMYSQL_USER=mysql
+
+make -j `cat /proc/cpuinfo | grep processor| wc -l`
+
+
+%install      开始把软件安装到虚拟的根目录中
+rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}
+
+%pre    rpm安装前执行的脚本
+useradd -r mysql
+mkdir -p /data/mysql
+mkdir -p /usr/local/mysql
+chown -R mysql.mysql /data
+chown -R mysql.mysql /usr/local/mysql
+%post   rpm安装后执行的脚本
+/usr/local/mysql/scripts/mysql_install_db --basedir=/usr/local/mysql --datadir=/data/mysql --user=mysql
+cp /usr/local/mysql/support-files/mysql.server /etc/init.d/mysql
+chkconfig mysql on
+service mysql start
+echo "export PATH=$PATH:/usr/local/mysql/bin" >> /etc/profile
+source /etc/profile
+
+%preun  rpm卸载前执行的脚本
+service mysql stop
+chkconfig --del mysql
+userdel mysql
+rm -rf /usr/local/mysql
+rm -rf /data/mysql
+rm -rf /etc/init.d/mysql
+%clean
+rm -rf %{buildroot}
+
+%postun     rpm卸载后执行的脚本
+
+%files      定义那些文件或目录会放入rpm中
+%defattr(-,%{MYSQL_USER},%{MYSQL_GROUP})
+%attr(755,%{MYSQL_USER},%{MYSQL_GROUP})/usr/local/mysql/*
+
+%defattr (-,root,root) 指定包装文件的属性，分别是(mode,owner,group)，-表示默认值，对文本文件是0644，可执行文件是0755
+
+%changelog      变更日志
+
+
+
+
+
+
+
+

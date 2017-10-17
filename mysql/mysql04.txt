@@ -1,0 +1,630 @@
+﻿用户管理
+create user username@hostname|ip|network;
+create user user@host identified by 'password';
+mysql.user
+
+grant all|select/update/delete... on 库.表 to user@host;
+grant all(c1,c2) on 库.表 to user@host with grant option;
+
+revoke select/update... on 库.表 from user@host;
+revoke all privileges,grant option from user@host;
+
+grant select on db.table to 'new_user'@'host' identified by 'password';
+
+drop user user@host;
+drop user username;
+
+where:
+> < >= <= != <>
+&& ||
+and or not
+bewteen ... and ...
+in(v1,v2,v3,...)
+not in(...)
+regexp
+
+order by xxx desc
+rand()
+
+distinct
+
+group by 
+max()
+min()
+sum()
+avg()
+count()
+
+where having
+
+目标：基于LAMP架构，搭建一个bbs论坛
+rpm版本：
+安装方便，升级、卸载都灵活，很难或者无法定制主要组件的功能，适合批量部署
+源码包编译：
+需要自己定制参数，前提是需要对平台的功能需要非常了解；卸载、升级、安装并不是很方便灵活
+
+折中的方案：
+	1、上线前，在测试环境中编译安装并且调试完毕后，把编译后的源码同步到其余软硬环境一样的机器，然后再make install
+	2、上线前，在测试环境中编译安装并且调试完毕后，把源码包封装成rpm包，再使用批量化部署软件(puppet)进行安装
+
+LAMP =  Linux + Apache + MySQL + Php
+
+编译方式（老的编译方式）：
+	Apache ----> MySQL ----> Php 或者 MySQL----->Apache----->Php
+说明：
+1、apache的安装必须要先于php；因为php是作为apache的模块libphp.so ，被apache加载调用
+2、apache于mysql之间并没有直接先后顺序的依赖,所以谁先谁后没所谓
+3、在php-5.3版本前，mysql必须先于php的编译;因为php需要实现连接数据库的功能，它通过mysql的接口才能编译出该功能。在php-5.3版本或者之后，php已经集成了一套连接mysql数据的代码，并不依赖mysql的接口，这个时候，mysql和php的编译顺序也就无所谓了。
+
+
+传统的安装php的方式中,我们在编译PHP时要支持mysql,一般需要指定以下几项:
+--with-mysql=/usr/local/mysql
+--with-mysqli=/usr/local/mysql/bin/mysql_config 
+--with-pdo-mysql=/usr/local/mysql
+但上面的三个参数需要先编译mysql，再编译php才可以。
+新的编译方式，把三面三个参数替换成下面三个参数，则php和mysql的编译顺序无所谓
+--with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd 就可以了
+
+Apache工作原理：
+	客户端——>index.html , logo.png ---> httpd(apache) ----直接把文件发送到---> 客户端
+	客户端——>*.php --> httpd(apache) ---加载--> libphp.so ---编译代码，把编译结果--->客户端
+
+编译安装mysql：
+1、安装前准备
+清空环境、安装相应的软件包
+# yum groupinstall "Development tools" -y  开发工具包组
+# yum groupinstall "Desktop Platform Development" -y   桌面开发工具包（图形化相关包）
+# yum install cmake
+# yum install ncurses-devel
+
+2、安装过程
+需求：
+basedir:/mysql
+datadir:/mysql/data
+socket:/mysql/data/mysql25.sock
+port=3307
+sysconfig:/mysql/etc
+charset:utf8
+
+cmake . \
+-DCMAKE_INSTALL_PREFIX=/mysql \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DSYSCONFDIR=/mysql/etc \
+-DMYSQL_UNIX_ADDR=/mysql/data/mysql25.sock \
+-DMYSQL_TCP_PORT=3307 \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_EXTRA_CHARSETS=all \
+-DMYSQL_USER=mysql
+
+# cmake . \
+-DCMAKE_INSTALL_PREFIX=/usr/local/mysql \		指定安装路径
+-DENABLED_LOCAL_INFILE=1 \					开启外部加载外部文件功能
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \		开启innodb存储引擎
+-DSYSCONFDIR=/usr/local/mysql/etc \			初始化参数文件路径
+-DMYSQL_UNIX_ADDR=/mysql56data/mysql.sock \	socket文件路径
+-DMYSQL_TCP_PORT=3307 \					指定端口号
+-DDEFAULT_CHARSET=utf8 \					默认字符集
+-DDEFAULT_COLLATION=utf8_general_ci \		默认校对规则（排序规则）
+-DWITH_EXTRA_CHARSETS=all \				扩展字符集
+-DMYSQL_USER=mysql						运行mysql用户身份
+
+# make ;make install	
+
+3、安装后配置
+1>  手动编写my.cnf配置文件
+# vim /usr/local/mysql/etc/my.cnf
+[mysqld]
+basedir=/mysql56
+port=3307
+datadir=/mysql56/data
+pid-file=/mysql56/mysql56.pid
+socket=/mysql56/mysql56.socket
+log-error=/mysql56data/mysql56-err.log
+user=mysql
+
+[client]
+socket=/mysql56data/mysql56.socket
+
+2>  创建相关用户及目录，并修改权限
+
+3>  初始化数据库
+# /usr/local/mysql/scripts/mysql_install_db --defaults-file=/usr/local/mysql/etc/my.cnf --basedir=/usr/local/mysql --user=mysql
+
+4>  启动服务
+# /usr/local/mysql/bin/mysqld_safe --defaults-file=/usr/local/mysql/etc/my.cnf &
+
+5>  登录
+
+==============================================================
+
+编译安装源码版apache
+1、安装前准备
+1>  先干掉原来编译过的apache（如果之前已安装过）
+rpm -e httpd
+或者如果知道安装目录，直接把安装目录删掉
+rm -rf /usr/local/apache2  -rf
+2>  安装依赖包apr
+在rhel6.5下直接编译安装apache的2.4系列版本，会报下面的错误：
+checking for APR... configure: WARNING: APR version 1.4.0 or later is required, found 1.3.9
+configure: WARNING: skipped APR at apr-1-config, version not acceptable
+原因：表示系统自带的apr软件版本为1.3.9，但它需要1.4.0以上的版本。
+
+解决方法:
+第一种：把apache降为2.2系列，就OK了。
+第二种：去下载新版本apr先编译，再编译apache调用它。
+
+安装apr软件：
+# bunzip2 apr-1.5.2.tar.bz2 压缩格式为bzip2，先解压再解包 
+# tar apr-1.5.2.tar -C /usr/src/
+# cd /usr/src/apr-1.5.2
+# ./configure
+# make
+# make install
+
+# bunzip2 apr-util-1.5.4.tar.bz2
+# tar xf apr-util-1.5.4.tar -C /usr/src/
+# cd /usr/src/apr-util-1.5.4/
+# ./configure --with-apr=/usr/local/apr/bin/apr-1-config    指定软件apr的路径
+# make
+# make install
+
+思考：一个软件的库文件是有可能被其它软件所调用，那么其它软件能否找到你的库文件呢？
+1> 一般来说，库文件安装到/lib,/lib64,/usr/lib/,/usr/lib64等，都可以找得到；
+     但是如果一个软件xxx把库文件安装到/usr/local/xxx/lib下，就要把这个路径加入到ldconfig命令可以找到的路径列表里面去，别人才能找到。
+2> ldconfig是一个动态链接库管理命令；
+    主要用途是在默认搜索目录（/lib,/lib64,/usr/lib/,/usr/lib64）以及动态库配置文件/etc/ld.so.conf中所列的目录中搜索出可共享的动态链接库
+ 问题：怎样将库文件的指定安装路径加入到ldconfig命令的搜索列表里？
+# vim /etc/ld.so.conf       
+include ld.so.conf.d/*.conf		--或者在这里的任意.conf结尾的子配置文件里加上一行也可以
+/usr/local/xxx/lib
+方法1：在/etc/ld.so.conf这个主配置文件里加上一行，写上让别人要查找库文件的路径
+方法2：在/etc/ld.so.conf.d/目录下创建一个*.conf结尾的文件，里面加入该路径即可	
+
+# ldconfig      上面加入路径后，就使用此命令让其生效
+
+
+2、安装apache
+# tar xf httpd-2.4.12.tar.bz2 -C /usr/src/
+# cd /usr/src/httpd-2.4.12/
+
+写一个脚本来执行以下内容
+vim apache.sh
+ ./configure \
+--enable-modules=all \			加载所有支持模块
+--enable-mods-shared=all \ 		共享方式加载大部分常用的模块
+--enable-so \					启动动态模块加载功能
+--enable-rewrite  \				启用地址重写功能
+--with-mpm=prefork \        插入式并行处理模块，称为多路处理模块，Prefork 是类UNIX平台上默认的MPM
+--with-apr=/usr/local/apr/bin/apr-1-config \	指定依赖软件apr路径
+--with-apr-util=/usr/local/apr/bin/apu-1-config 
+
+
+#--enable-auth-digest		启用摘要认证，相比于基本认证 （可有可无）
+
+错误:
+可能会出现下面的错误，表示pcre-devel没安装；
+configure: error: pcre-config for libpcre not found. PCRE is required and available from http://pcre.org/
+解决方法:
+yum install pcre-devel后，再用上面参数再编译
+
+
+# make 
+# make install
+
+# ls /usr/local/apache2/        确认这个目录产生后，说明apache编译安装成功
+bin  build  cgi-bin  conf  error  htdocs  icons  include  logs  man  manual  modules
+
+==========================================================
+编译安装php
+
+# tar xf php-5.6.11.tar.xz -C /usr/src/
+# cd /usr/src/php-5.6.11
+
+在当前目录下，写一个脚步执行以下内容
+# vim php.sh  
+ ./configure \
+--with-apxs2=/usr/local/apache2/bin/apxs \
+--with-mysql=/usr/local/mysql/ \        mysql的安装目录
+--with-mysqli=/usr/local/mysql/bin/mysql_config \    mysql安装目录下的bin/mysql_config
+--with-pdo-mysql=/usr/local/mysql \	连接mysql模块（mysql安装目录）  ---前四项为必需内容
+--with-zlib \
+--with-zlib-dir=/usr/local/mysql/zlib \     数据压缩用的函数库
+--with-curl \
+--enable-zip \
+--with-gd \
+--with-freetype-dir \
+--with-jpeg-dir \
+--with-png-dir \
+--enable-sockets \
+--with-xmlrpc \
+--enable-soap \
+--enable-opcache \
+--enable-mbstring \
+--enable-mbregex \
+--enable-pcntl \
+--enable-shmop \
+--enable-sysvmsg \
+--enable-sysvsem \
+--enable-sysvshm \
+--enable-calendar \
+--enable-bcmath
+
+--enable-fpm     开启PHP-FPM  进程管理器(支持php的fastcgi模式)
+with-apxs2	调用apache加载模块支持PHP
+gd 	 		画图库
+libevent 
+libiconv 		字符变换转换
+libmcrypt 		字符加密
+mcrypt  		字符加密
+mhash   		哈希运算
+
+错误：缺少libcurl-devel包
+configure: error: Please reinstall the libcurl distribution -
+    easy.h should be in <curl-dir>/include/curl/
+    
+# make		    make成功后，会显示让你make test,不用做
+# make install
+
+
+# ls /usr/local/apache2/modules/libphp5.so	确认有这个.so模块文件，就表示编译php成功
+
+*****************************************************************************
+如果make报类似下面的错误的话；或者你第一次make不成功，第二次重做，建议你删除/usr/src/php-5.6.11源码目录，重新解压，并使用make ZEND_EXTRA_LIBS='-liconv'来编译
+
+collect2: ld returned 1 exit status
+make: *** [sapi/fpm/php-fpm] Error 1
+
+需要使用下面的参数来编译
+make ZEND_EXTRA_LIBS='-liconv'
+make install
+
+======================================================================
+后续配置
+
+三个软件安装完毕后，进行apache和php配置
+
+1、修改apache配置文件
+# vim /usr/local/apache2/conf/httpd.conf
+1> 配置优先支持中文
+LoadModule negotiation_module modules/mod_negotiation.so	此模块打开注释
+Include conf/extra/httpd-languages.conf			打开此选项，扩展配置文件就生效了
+
+# vim /usr/local/apache2/conf/extra/httpd-languages.conf   修改子配置文件
+DefaultLanguage zh-CN		打开注释，默认语言集改为中文
+LanguagePriority zh-CN en ca cs da de el eo es et fr he hr it ja ko ltz nl nn no pl pt pt-BR ru sv tr zh-TW
+语言集优先集，把zh-CN 写到前面
+
+
+
+# vim /usr/local/apache2/conf/httpd.conf
+
+2> 配置apache对php支持 也就是配置apache和php的联系
+LoadModule php5_module       modules/libphp5.so	  找到这一句，在这句下面加上两句
+AddHandler php5-script   .php		<---添加两行，告诉httpd把.php文件交给模块去编译
+AddType text/html  .php		这两句的意思是以.php结尾的文件都认为是php程序文件，注意两句话的.php前面都是有一个空格的
+
+3> 默认主页加上index.php,并放在index.html前,支持php的首页文件
+<IfModule dir_module>
+    DirectoryIndex index.php index.html
+</IfModule>
+
+4> 配置网站家目录
+DocumentRoot "/web"			修改网站家目录
+<Directory "/web">			相应的目录容器那里也要修改
+......
+</Directory>
+
+默认的网站目录：/usr/local/apache2/htdocs/
+
+2、让php支持连接本地的数据库
+说明：
+本地数据库一般是通过socket文件连接，而本地数据库的socket文件如果不在默认路径，就必须告诉php从哪里读取socket文件
+# cp /usr/src/php-5.6.11/php.ini-production /usr/local/lib/php.ini
+vim /usr/local/lib/php.ini
+.....
+[MySQL]
+mysql.default_port = 3307		改成对应的mysql的端口
+mysql.default_socket = /mysqldata56/mysql56.socket		对应的socket文件地址
+
+[MySQLi]
+mysqli.default_port = 3307
+mysqli.default_socket = /mysqldata56/mysql56.socket
+
+3、创建apache的默认数据根目录及权限修改
+# mkdir /web
+# chown daemon. -R   /web
+
+4、启动apache
+# /usr/local/apache2/bin/apachectl start
+(98)Address already in use: make_sock: could not bind to address [::]:80
+(98)Address already in use: make_sock: could not bind to address 0.0.0.0:80
+no listening sockets available, shutting down
+Unable to open logs
+
+注意：
+上面的报错表示80被占用，可以去先停掉rpm版（或者改端口）httpd再启动
+
+# /usr/local/apache2/bin/apachectl start
+# lsof -i:80
+COMMAND   PID   USER   FD   TYPE DEVICE SIZE NODE NAME
+httpd   26564   root    3u  IPv6 190399       TCP *:http (LISTEN)
+httpd   26565 daemon    3u  IPv6 190399       TCP *:http (LISTEN)
+httpd   26566 daemon    3u  IPv6 190399       TCP *:http (LISTEN)
+httpd   26567 daemon    3u  IPv6 190399       TCP *:http (LISTEN)
+httpd   26568 daemon    3u  IPv6 190399       TCP *:http (LISTEN)
+httpd   26569 daemon    3u  IPv6 190399       TCP *:http (LISTEN)
+再次启动，就可以看到源码版的进程
+
+为了方便启动，做成脚本启动脚本
+1、拷过去，因为默认为755有执行权限，所以我们不用再改权限，如果没有则需要更改权限
+# cp /usr/local/apache2/bin/apachectl /etc/init.d/apache
+# service apache stop
+# lsof -i :80
+# service apache start  
+
+----------------------------
+启不来的一个错误小示例：
+vim /etc/hosts
+10.1.1. 1   node1.uplook.com	 --这里写错了，最后一个1前有一个空格	
+
+# /usr/local/apache2/bin/apachectl start	--会造成start或stop 卡在那里
+
+5、去网站家目录下写一个php的测试页
+# vim /webroot/test.php
+<?php
+        phpinfo();
+?>
+
+然后使用浏览器访问测试页，看是否支持php
+
+http://IP/test.php   看到php的测试页表示ok
+
+到此，lamp的编译安装和基本配置完毕，下面就可以安装你的web应用了
+
+
+
+
+搭建Discuz论坛
+Discuz_X3.2_SC_UTF8.zip		Discuz论坛
+phpMyAdmin-4.4.11-all-languages.zip	    php写的mysql的管理工具（类似oracle的OEM）
+phpwind_v9.0.1_utf8.zip	wind论坛
+
+需求：
+/webserver/discuz
+/webserver/admin
+
+www.luntan.cc   
+www.admin.net
+
+
+创建/webserver/{discuz,admin}
+
+将 Discuz_X3.2_SC_UTF8.zip 解压后的 upload 目录下的内容拷贝到/webserver/discuz 目录下
+将 phpMyAdmin-4.4.11-all-languages.zip 解压后的内容拷贝到 /webserver/admin 目录下
+
+放开配置文件中虚拟主机的权限
+# Virtual hosts
+# Include conf/extra/httpd-vhosts.conf  将这一行的#去掉
+
+将默认发布目录改为/webserver
+ 
+
+虚拟主机：
+
+# vim /usr/local/apache2/conf/extra/httpd-vhosts.conf
+<VirtualHost *:80>
+    ServerAdmin webmaster@dummy-host.example.com
+    DocumentRoot /webserver/discuz""
+    ServerName www.luntan.cc
+    ServerAlias www.luntan.cc
+    ErrorLog "logs/dummy-host.example.com-error_log"
+    CustomLog "logs/dummy-host.example.com-access_log" common
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@dummy-host2.example.com
+    DocumentRoot "/webserver/admin"
+    ServerName www.admin.net
+    ErrorLog "logs/dummy-host2.example.com-error_log"
+    CustomLog "logs/dummy-host2.example.com-access_log" common
+</VirtualHost>
+
+
+
+
+phpwind论坛：
+# cp -a phpMyAdmin-4.0.2-all-languages/*  /webserver/bbswind
+# cd  /webserver/bbswind
+# mv config.sample.inc.php config.inc.php
+$cfg['blowfish_secret'] = 'a8sfdfkljlb7c6d'; 随便修改
+....
+$cfg['Servers'][$i]['host'] = 'localhost'; 如果登录不成功尝试修改成127.0.0.1
+
+
+编译软件的过程与经验
+1、./configure  通过指定参数，来确认你想要安装的软件安装在哪里，加上哪些功能和去掉哪些功能（如果这一步报错，基本都是缺少依赖包)；
+解决方法：
+使用yum去安装，一般来说，rhel做为一个成熟的linux操作系统，常见的底层依赖包都自带了，所以安装下面这两个组，一般都会有你所需要的依赖包。
+# yum groupinstall "Development tools" -y
+# yum groupinstall "Desktop Platform Development" -y 
+如果缺少依赖包在rhel的yum源里找不到，则上网下载第三方的软件，先编译第三方软件，再编译本软件
+
+关于./configure参数选择的基本方法:
+./configure --help 查看所有的编译参数
+第一个重要参数
+--prefix=	此参数指定安装目录(一般安装到/usr/local/或者/usr/local/软件名下)
+
+第二类重要参数:
+--enable-xxx	打开一个功能（默认是关闭的）
+--disable-xxx	关闭一个功能（默认是打开的）
+
+如果你是新手，你就不加任何功能参数，全部使用默认值。但又如果你怕少了功能造成以后需要重编，你可以加上所有的enable参数（但加得越多，错误概率也越大，因为调用的依赖会多，有可能会因为少包而报错）
+
+第三类参数:
+--with-xxx=DIR    指定一个目录，调用此目录的功能
+
+常用网站：
+www.rpmfind.net
+www.pbone.net
+
+2、make   相当于是根据你上一步定义好的文件（Makefile），把这个软件给做出来（这一步一般很少出错，如果出错，问题都比较麻烦。可能是一些兼容性的问题等等，你可以尝试上网查询解决方法,如果查不到，只能换个环境或者换个软件版本或者换些编译参数重新编译)
+
+3、make install  把做好的软件，安装到你第一步所指定的安装目录里（这一步几乎不会出错的）
+
+
+问题：假设一个软件aaa，安装到/usr/local和安装到/usr/local/aaa之间的区别?
+安装到/usr/local下:
+优点:
+此软件的命令一般会安装到/usr/local/bin或/usr/local/sbin等；
+这些路径都默认在$PATH里，所以安装的命令可以直接用，而不用使用绝对路径。
+库文件一般都会安装到/usr/local/lib下，所以把它加入ldconfig，以后所有安装在此目录的库文件都可以被找到。
+缺点:
+不方便删除，因为很多软件都安装到/usr/local下
+
+安装到/usr/local/abc下:
+优缺点与上面正好相反
+
+最终建议:小软件一般默认安装/usr/local/；大软件安装/usr/local/软件名/下
+
+如果没有默认安装，那么软件安装完毕需要配置环境变量（这样才能使用安装目录下的bin命令）
+vim /etc/profile
+...
+PATH=$PATH:/mysql/bin
+export PATH
+或者
+export PATH=$PATH:/mysql/bin
+
+添加完毕后要重新加载该文件使其生效
+source /etc/profile
+
+vim /etc/man.config
+...
+MANPATH=/xxxx/xxx/man
+
+
+加载库文件
+
+vim /etc/ld.so.conf
+/xxx/xxx/lib
+或者
+cd /etc/ld.so.conf.d
+echo /xxx/xxx/lib > xxx.conf
+
+写入配置文件后执行
+ldconfig
+
+
+
+
+LAMP之mysql数据库迁移：
+web:10.1.1.1
+mysql:10.1.1.2
+
+思路：
+1、系统版本和mysql数据库的版本高度保持一致
+2、ip地址静态
+3、防火墙和selinux
+4、停业务
+1> 先停止web应用
+2> 停止mysql数据库
+5、备份mysql数据库（tar|rsync）
+6、备份的数据文件远程拷贝到目标端（10.1.1.2）
+7、将数据库在10.1.1.2服务器上进行恢复
+8、对php.ini文件进行配置（连接mysql配置）
+
+步骤：
+source:10.1.1.1
+target:10.1.1.2
+1、准备10.1.1.2服务器以及mysql数据库
+1> 停止业务
+/usr/local/apache2/bin/apachectl  stop
+service mysql25 stop
+2> 将源mysql数据库的安装目录和数据目录远程同步到目标端
+rsync -av /mysql 10.1.1.2:/
+3> 将mysql数据库在目标端启动起来
+# scp /etc/init.d/mysql25 10.1.1.2:/etc/init.d/
+
+2、修改php连接mysql的文件
+vim /usr/local/lib/php.ini
+mysqli.default_host = 10.1.1.2
+mysql.default_host = 10.1.1.2
+
+3、启动web应用
+结果：报错
+原因：程序也需要更改连接数据库信息
+解决：
+ 1069  cd /webserver/
+ 1070  ll
+ 1071  cd discuz/
+ 1072  ll
+ 1073  cd config/
+ 1074  ll
+ 1075  vim config_global.php (该文件位于/webserver/discuz/config/config_global.php)
+ 1076  vim config_ucenter.php 
+ 1077  /usr/local/apache2/bin/apachectl restart
+ 1078  cd ../../admin/
+ 1079  ll
+ 1080  cp config.sample.inc.php config.inc.php 
+ 1081  vim config.inc.php 
+ 1082  /usr/local/apache2/bin/apachectl restart
+
+4、测试验证
+
+注意：
+如果以上都修改了，但是依然连接不了数据库，那么检查用户授权
+
+
+作业：
+qq：396328185
+mail：houminna@uplooking.com
+catcaicai@hotmail.com
+
+1、基于LAMP架构搭建一个论坛、博客、购物网站等（web+mysql在同一台服务器）
+phpMyAdmin-4.4.11-all-languages.zip
+phpwind_v9.0.1_utf8.zip
+wordpress-4.7.3-zh_CN.tar.gz
+ECShop_V2.7.3_UTF8_release1106.rar
+edusoho-7.5.12.tar.gz
+rarlinux-x64-5.4.0.tar.gz
+
+以上网站在rhel6和rhel7都需要完成;并且数据库使用源码包或者通用的二进制包安装
+
+2、将mysql数据库迁移到另外一台服务器
+使用不同方式迁移：
+1> tar
+2> rsync
+
+以上内容搭建完毕后形成标准文档
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

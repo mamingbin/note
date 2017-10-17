@@ -1,0 +1,523 @@
+Mysql 体系结构：
+
+连接者：不同语言的代码程序和mysql的交互（SQL交互）
+1、连接池            管理、缓冲用户的连接，线程处理等需要缓存的需求
+2、管理服务和工具组件 
+3、sql接口           接受用户的SQL命令，并且返回用户需要查询的结果
+4、查询解析器     SQL命令传递到解析器的时候会被解析器验证和解析(权限、语法结构) 
+5、优化器           SQL语句在查询之前会使用查询优化器对查询进行优化
+6、缓存              如果查询缓存有命中的查询结果，查询语句就可以直接去查询缓存中取数据
+7、插入式存储引擎   
+存储引擎说白了就是如何管理操作数据（存储数据、如何更新、查询数据等）的一种方法。因为在关系数据库中数据的存储是以表的形式存储的，
+所以存储引擎也可以称为表类型（即存储和操作此表的类型）
+
+在Oracle 和SQL Server等数据库中只有一种存储引擎，所有数据存储管理机制都是一样的。而MySql数据库提供了多种存储引擎。
+用户可以根据不同的需求为数据表选择不同的存储引擎，用户也可以根据自己的需要编写自己的存储引擎。
+甚至一个库中不同的表使用不同的存储引擎，这些都是允许的。
+
+MySQL常用的存储引擎：
+MyISAM存储引擎
+由于该存储引擎不支持事务、也不支持外键，所以访问速度较快。因此当对事务完整性没有要求并以访问为主的应用适合使用该存储引擎。
+
+InnoDB存储引擎  mysql 5.5版本以后默认的存储引擎
+由于该存储引擎在事务上具有优势，即支持具有提交、回滚及崩溃恢复能力等事务特性，所以比MyISAM存储引擎占用更多的磁盘空间。
+因此当需要频繁的更新、删除操作，同时还对事务的完整性要求较高，需要实现并发控制，建议选择。
+
+MEMORY
+MEMORY存储引擎存储数据的位置是内存，因此访问速度最快，但是安全上没有保障。适合于需要快速的访问或临时表。
+
+BLACKHOLE
+黑洞存储引擎，写入的任何数据都会消失，可以应用于主备复制中的分发主库。
+
+8、物理文件     日志文件，数据文件，配置文件，pid文件,socket文件等
+
+mysql中的逻辑对象:
+mysqld_process+memory+datafile--->库－－＞表－－＞记录（由行与列组成）
+
+区分数据库、数据库实例、数据库服务器：
+数据库（database）：
+        操作系统或存储上的数据文件的集合。mysql数据库中，数据库文件可以是* .frm、*.MYD、*.MYI、*.ibd等结尾的文件，不同存储引擎文件类型不同。
+1、 .frm文件
+不论是什么存储引擎，每一个表都会有一个以表名命名的.frm文件，与表相关的元数据（meta)信息都存放在此文件中，包括表结构的定义信息等。
+
+2、.MYD文件
+myisam存储引擎专用，存放myisam表的数据（data)。每一个myisam表都会有一个.MYD文件与之呼应，同样存放在所属数据库的目录下
+
+3、.MYI文件
+也是myisam存储引擎专用，存放myisam表的索引相关信息。对于myisam存储引擎来说，可以被缓存(cache)的内容主要就是来源于.MYI文件中。
+每一个myisam表对应一个.MYI文件，其存放的位置和.frm及.MYD一样
+
+4、.ibd文件和ibdata文件
+存放innoDB的数据文件（包括索引）。innoDB存储引擎有两种表空间方式：独享表空间和共享表空间。
+独享表空间：使用.ibd文件来存放数据，且每个表一个.ibd文件，文件存放在和myisam数据相同的位置。
+共享表空间：使用.ibdata文件，所有表共同使用一个（或多个，自行配置）ibdata文件。
+
+5、db.opt文件    此文件在每一个自建的库里都会有，记录这个库的默认使用的字符集和校验规。
+
+其他文件：
+1>.系统配置文件【my.cnf】
+此文件中可以包含多种参数选项组,每一种参数组都通过中括号给了固定的组名，如：
+[mysqld]组中包括了mysqld服务启动时的初始化参数
+[client]组中包含着客户端工具程序可以读取的参数，此外还有其他针对各个客户端软件的特定参数组等
+
+2>.pid文件
+pid文件是mysqld应用程序在Unix/Linux环境下的一个进程文件，和许多其他Unix/Linux服务端程序一样，它存放着自己的进程id
+
+3>.socket文件
+socket文件也是在Unix/Linux环境下才有的，用户在Unix/Linux环境下客户端连接可以不通过TCP/IP网络而直接使用Unix Socket来连接mysql.
+
+数据库实例（instance）：
+    由后台进程或者线程以及一个共享内存区组成。共享内存可以被运行的后台线程所共享。需要注意：数据库实例才是真正操作数据库的。
+    
+数据库和数据库实例的关系：
+通常情况下，数据库实例和数据库是一一对应的关系，也就是一个数据库实例对应一个数据库；
+但是，在集群环境中存在多个数据库实例共同使用一个数据库。
+
+数据库服务器(database server)：部署安装数据库实例的服务器。
+
+
+mysql  数据库的帮助：  
+1、官档
+2、man 文档
+3、命令行下的帮助文件      --oracle命令行没有，需要去查官方文档
+mysql > help;
+mysql > help create table;
+mysql> ? contents
+		--分了很多类
+   Account Management
+   Administration
+   Data Definition
+   Data Manipulation
+   Data Types
+   Functions
+   Functions and Modifiers for Use with GROUP BY
+   Geographic Features
+   Language Structure
+   Storage Engines
+   Stored Routines
+   Table Maintenance
+   Transactions
+   Triggers
+
+mysql> ? Account Management	--一级一级的向内部查
+
+mysql> ? CREATE USER
+
+
+如何操作数据库中的数据：
+SQL(国际标准化,结构查询语言)
+	动作：
+		1、查询动作（最多的动作）
+		2、修改动作
+		3、删除动作
+		4、增加动作
+
+说明：
+不同的数据库中，SQL语句的语法有所不同：国际标准化语句+自己官方自定义的标准
+mysql=国际标准化＋mysql官方的自定义标准
+pl/sql=国际标准化＋oracle官方的自定义标准
+Tsql=国际标准化＋microsoft官方的自定义标准
+
+SQL的种类：
+数据定义语言:DDL	create  drop  alter  truncate  rename			定义表和库的结构
+数据操作语言:DML     insert delete update 	对表中的数据进行增删改查的操作
+数据查询语言:DQL     	select                       对数据进行查询
+数据控制语言:DCL	grant revoke			针对不同数据对象进行授权（全库/单库/表/列）
+
+事务控制:			
+commit   提交   
+rollback   回滚
+
+查看默认存储引擎、字符集、数据目录等
+show databases;
+show schemas;
+show variables like '%char%';
+show variables like '%data%';
+show engines;
+说明：
+mysql-5.5.8版本之前使用的默认存储引擎是MyISAM;之后使用InnoDB作为默认存储引擎。源码包开启innodb存储引擎是将其静态编译到mysql中
+
+数据库操作：
+create database db1;
+create database db1 default charset gbk;
+create database if not exists db1 default character  set utf8;
+show create database db1;
+
+alter database db1 default character set gbk;
+drop database db1;
+
+数据库表操作：
+use db1;
+show tables;
+create table t1 (id int,name varchar(10),.....);
+create table t1 (id int key,name varchar(20) not null,......)
+desc t1;
+describe t1;
+insert into t1 set id=3,name='li';
+insert into t1 values(1,'zhang'),(2,'wang');
+insert into t1 (id,name) values(3,'li');
+insert into t1 select * from t2;
+delete from t1;
+delete from t1 where id>3;
+
+常见的数据类型：
+数值：
+1、整数类型（精确值）
+Integer Types (Exact Value) - INTEGER, INT, SMALLINT, TINYINT, MEDIUMINT, BIGINT
+int
+tinyint
+bigint
+2、不动点类型（精确值）-十进制，数字
+Fixed-Point Types (Exact Value) - DECIMAL, NUMERIC
+DECIMAL(5,2): 5代表精度，2代表刻度；表示该列总共可以存储5位数字，精确到小数点后2位；
+存储范围： -999.99 ~ 999.99
+NUMERIC就是NUMERIC
+说明：精度是几，小数点+整数位不能超过前面的精度。
+decimal(0) 默认是decimal(10,0)
+3、浮点类型（近似值）-浮动
+Floating-Point Types (Approximate Value) - FLOAT, DOUBLE
+float（7,4）就会看到这样：-999.9999的显示。MySQL进行舍入时存储的值，所以如果你插入999.00009成浮（7,4）柱，近似的结果是999.0001
+double
+
+时间和日期：
+DATE:  日期  'YYYY-MM-DD'. The supported range is '1000-01-01' to '9999-12-31'
+DATETIME： 日期时间组合  'YYYY-MM-DD HH:MM:SS' The supported range is '1000-01-01 00:00:00' to'9999-12-31 23:59:59'.
+TIMESTAMP：时间戳 '1970-01-01 00:00:01.000000' UTC to '2038-01-19 03:14:07.999999' 
+注意：不能等于'1970-01-01 00:00:00'会归零；
+TIME：时间 '-838:59:59.000000' to '838:59:59.000000'
+注意：'11:12' means '11:12:00', not '00:11:12' ； '1112' and 1112 as meaning '11:12:00
+默认情况下，超出范围的值会被自动转换成接近的值，eg：'-850:00:00' and '850:00:00' are converted to '-838:59:59' and '838:59:59'
+无效的的时间值会被转换成'00:00:00' 
+YEAR:   range 1901 to 2155, or 0000
+注意：YEAR(4) and YEAR(2)不同之处在于显示不同；eg：70 (1970 or 2070) or 69 (2069).
+
+字符串：
+CHAR：0 to 255   定长，存储时用空格补齐；读取时删掉后面的空格，PAD_CHAR_TO_FULL_LENGTH sql模式开启
+VARCHAR：0 to 65,535 可变长度
+BLOB：保存二进制的大型数据（字节串），没有字符集，eg：图片、音频视频等
+TEXT：保存非二进制字符串（字符串）；有一个字符集
+BINARY和VARBINARY：类似CHAR和VARCHAR；保存字节字符串，而不是字符字符串，这意味着它们没有字符集
+
+update	更新/修改记录
+UPDATE table_anem SET column_name1 =new value1, column_name2 = value2, ...WHERE ... ;
+
+alter   修改表的属性：
+mysql> alter table t2 add id int first;	  	    增加一列成为第一列
+mysql> alter table t2 add id2 int after id;		    在id后面增加一列叫id2
+mysql> alter table t2 drop id2;				    删除id2这个列
+mysql> alter table t2 change id ID bigint;		    修改列名和数据类型
+mysql> alter table t2 modify ID int;				    修改列的数据类型
+mysql> show engines;						    查看数据库有哪些存储引擎
+mysql> alter table t20 engine MyISAM;			    修改表的存储引擎
+mysql> show create table t20;					    查看修改存储引擎是否成功
+mysql> alter table t20 default charset=utf8;	    修改表的语言编码
+
+RENAME TABLE： 重命名或者移动表
+rename table db01.t1 to db02.t1;  移动表到另一个库里并重命名
+alter table db01.t1 rename db02.t1
+rename table tt1 to tt2;        只重命名表名
+alter table tt1 rename  tt2;
+
+删除表：
+drop table t1;
+
+用户管理：
+1、创建用户
+create user user@host;
+create user user@host identified by 'password';
+@'%'
+@ip
+@'network'
+
+说明：用户的信息保存在mysql数据库中的user表中，验证用户是否创建成功如下：
+select user,host,password from mysql.user;
+	    
+2、用户权限  [手册第6.2章节] 
+权限分类：
+USAGE			无权限,只有登录数据库,只可以使用test或test_*数据库
+ALL	所有权限							                          
+select/update/delete/super/slave/reload	     指定的权限
+with grant option	允许把自己的权限授予其它用户或者从其他用户收回自己的权限
+
+作用范围：
+*.*			            全库、全表（mysql.user）
+mysql.*		         mysql库下所有表（某库中的所有表）(mysql.db)
+mysql.user		      mysql库中user表（单表）(mysql.table_priv)
+mysql.user.host     mysql库中user表的host列(mysql.columns_priv)
+
+主机登录权限：
+user@localhost		                            表示user只能在本地通过socket登录服务器
+user@192.168.0.1	                            表示user用户只能在192.168.0.1登录数据库服务器
+user@192.168.0.0/255.555.255.0       指定某个子网的主机可以登录数据库
+user@%		表示user用户能在所有的机器上登录数据库服务器
+
+说明：
+给用户指定来源主机不能写：user@10.1.1.0/24  user@10.1.1.0/255.255.255.0
+
+用户授权：
+show grants;    查看用户权限
+show grants for 'user'@'localhost'
+
+grant 权限 on 库.表 to 用户@主机
+grant 权限(列1,列2,...) on 库.表 to 用户@主机
+
+mysql> grant all on db001.* to 'tom'@'10.1.1.254' identified by '123';
+
+权限的保存位置：
+mysql.user			所有mysql用户的账号和密码，以及对用户对全库全表权限（*.*）
+mysql.db				非mysql库的授权都保存在此(db.*)
+mysql.table_priv		某库某表的授权(db.table)
+mysql.columns_priv		某库某表某列的授权(db.table.col1)
+mysql.procs_priv		某库存储过程的授权
+
+回收权限：revoke
+mysql> revoke update,select on mysql.user from stu6@localhost;	--撤消指定的权限
+mysql> revoke all privileges,grant option from stu4@'%'; --撤消所有的权限
+
+删除用户：
+mysql> drop user user01@'localhost';	                    删除用户
+mysql> select user from mysql.user where user='user01';	    验证用户是否删除成功
+mysql> drop user user;              默认删除该用户从任意主机登陆
+mysql> rename user u01@'instructor.example.com' to u001@'localhost';  重命名用户名
+mysql> show grants;                                           查看用户权限
+mysql> show grants for user02@'%';                      查看指定用户的权限 
+mysql> drop user ''@'rhel6.example.com';               删除一个匿名用户
+mysql> delete from mysql.user where user='';		    删除mysql中的匿名用户
+mysql> delete from mysql.user where user='root' and host='::1';
+mysql> flush privileges;
+
+注意：如果tcp/ip登录，服务器端口不是默认3306，则需要加端口号
+问题：可不可以给一个新的用户授权？
+
+更改user02在所有机器上都能登录数据库.
+mysql> update mysql.user set host='%' where user='user02'; 
+mysql> flush privileges;
+
+补充总结：
+mysql> create table t2 like t1;             复制表结构不复制数据
+mysql> insert into t2 select * from t1;
+mysql> delete from t2;                          --删除整个表,一行一行删除,所有的操作都会被记录至事务日志中
+mysql> insert into t2 select * from t1;
+mysql> delete from t2 where id=1;       --指定条件删除
+mysql> truncate from t2 where id=2;             --报错
+mysql> truncate t2;                                 	--一次性全部删除,不会被记录至事务日志中.
+
+区别：delete、truncate、drop
+delete：删除数据
+1、数据操作语言（DML）在事务控制里，DML语句是需要commit，不提交的话可以rollback；删除大量记录速度慢，只删除数据不回收高水位线
+2、可以带条件删除
+truncate：删除数据
+1、数据定义语言（DDL）清大量数据速度快，高水位线（high water mark）下降
+2、不能带条件truncate
+drop：对象表、库、用户等；数据定义语言
+
+问题：事务控制，commit或者rollback，为什么不用写会自动提交呢？
+show variable like '%autocommit';
+
+
+数据查询语句：
+通配符：
+	%	    匹配0个或任意多个字符
+	_	    匹配一个字符
+	＝	    精确匹配
+	like	模糊匹配
+	regexp (. 任意单个字符 *前导字符出现0次或连续多次  .* 任意长度字符.....)
+		使用正则表达式来匹配
+
+select ename as 姓名,job 工作,sal 工资,comm 提成,deptno 部门号 from emp;
+where:
+逻辑表达式：
+= > < >= <= !=(<>)
+&& || 
+and or not
+between ... and ...
+
+mysql> select * from emp where comm regexp '^[0-9]';
+mysql> select * from emp where comm regexp '^[0-9]+';
+mysql> select * from emp where comm is not null;
+mysql> select * from emp where hiredate not between '1982-01-01' and '1983-12-30';
+mysql> select * from emp where hiredate between '1982-01-01' and '1983-12-30';
+mysql> select * from emp where hiredate <>'1980-12-17';
+mysql> select * from emp where hiredate <='1981-01-01' or hiredate >='1982-12-30';
+
+排序：
+	order by	排序，默认升序
+	asc		    升序排列结果
+	desc	        降序排列结果
+	group by	聚合
+	distinct	    去除重复的行
+
+group by:一般和聚合函数一起使用才有意义
+max()
+min()
+sum()
+avg()
+count()
+
+mysql> select deptno,max(sal) from emp group by deptno;
+mysql> select deptno,sum(sal) from emp group by deptno;
+mysql> select sum(sal) from emp;
+子查询：
+mysql> select * from emp where sal in(select max(sal) from emp group by deptno);
+
+查找每个部门员工总数以及员工的平均工资
+思路：
+1、需要返回3个结果（group by deptno）
+2、使用聚合函数统计(count(*) avg(sal))
+
+select deptno 部门号,count(*) 部门人数, avg(sal) 平均工资 from emp group by deptno; 
+
+mysql> select deptno,count(*),sum(sal) from emp where deptno in (10,20) group by deptno;
+
+mysql> select deptno,count(*) c,sum(sal) from emp group by deptno having c in (3,5)
+
+找出部门人数大于4，同时列出每个部门的员工平均工资和最小工资以及员工数
+select deptno,avg(sal) 平均工资,min(sal) 最小工资,count(*) 员工数 from emp group by deptno having 员工数>4;
+
+找出20和30号部门最小工资员工的所有信息
+mysql> select * from emp where sal in (select min(sal) from emp where deptno in (20,30) group by deptno);
+
+总结：
+group by 分组
+区分where和having：
+1、可以对数据进行筛选
+2、where针对的是表里面的字段做筛选条件；having针对前面所查询出来的结果集做筛选
+
+
+开胃菜：调用其他函数查看当前数据库的一些基本信息：
+常用函数：
+查看mysql支持字符加密函数：
+select password('123');		
+select md5('123');
+select sha1('123');			
+select encrypt('123');		基本上不用了
+
+使用select来调度mysql中的常见函数：
+select version();		当前数据库版本
+select current_user();       	当前用户
+select current_time();       	当前时间
+select current_date();       	当前日期
+select now(); 			当前日期时间
+mysql>\s	查看当前数据库状态信息
+
+基本的查询语句：
+select * from emp;		查看所有数据
+select empno,ename,job,sal from emp; 		查看指定列
+select empno 工号,ename 姓名,job 工作,sal 工资 from emp;  	给列别名增加可读性
+或者
+select empno as 工号,ename as 姓名,job as 工作,sal as 工资 from emp;
+增加where条件查询：
+
+
+排序：
+select * from emp order by deptno;		默认按照deptno列升序排列
+select * from emp order by deptno asc;	指定按照deptno列升序排列
+select * from emp order by deptno desc;	指定deptno列按降序排列
+
+去重复行：
+select distinct deptno from emp;
+
+聚合：group by 
+group by:根据给定数据列的每个成员对查询结果进行分组统计，最终得到一个分组汇总表。
+查找每个部门的最高工资：
+select deptno,max(sal) from emp group by deptno;
+
+查找每个部门员工的总薪水：
+select deptno,sum(sal) from emp group by deptno;
+
+查找1982-01-01日以后，部门的最高工资：
+select deptno,max(sal) from emp where hiredate>'1982-01-01' group by deptno;
+
+找出员工数超过4个的部门的最高和最低薪水
+
+
+合并列：
+select concat(user,'    ',password) as 用户名和密码 from mysql.user;
+create table ta3(path1 varchar(255),homedir varchar(255));
+insert into t3 set path1='/www/uplooking',homedir='u01';
+select concat(path1,'/', homedir) from t3;
+select concat(path1,'/', homedir) as '家目录' from t3;
+
+mysql> select ename,sal+ifnull(comm,0) from emp;
+
+ifnull(comm,0) :如果comm列是null，那么用0代替
+
+
+分页函数（limit）：
+limit 起始位置，偏移量  起始位置从0开始
+select * from t1 limit 10;           显示前10行
+select * from t1 limit n;             显示前n行
+
+select * from t1 limit 10,10;	    显示11至20行
+select * from t1 limit 1;       		显示第1行 
+select * from t1 limit 0,2;      		显示第1,2行 
+select * from t1 limit 2,2;      		显示3,4行
+select * from t1 limit 4,2;     		显示5,6行
+select * from t1 limit 6,2;      		显示第7,8行
+
+逻辑运算：and | or| not
+ select * from t1 where math >= 60 and english >= 60;
+ select * from t1 where math >= 60 or english >= 60;      其中一科及格
+ select * from t1 where math >= 60 and not  english >= 60;
+
+
+
+多表查询
+常规查询表：
+select * from emp,dept where emp.deptno=dept.deptno;
+select dept.deptno,dept.dname,emp.ename,emp.job from emp,dept where emp.deptno=dept.deptno;
+
+表的连接:纵向连接/内连接/左连接/右连接
+左连接（以左表为标准连接右表）:
+left join=left [outer] join
+select emp.ename,emp.job,dept.deptno from dept left join emp on emp.deptno=dept.deptno;
+
+右连接（以右表为标准连接左表）:
+right join= right outer join
+select emp.ename,emp.job,dept.deptno from dept right join emp on emp.deptno=dept.deptno;
+
+内连接:取多表之间的交集
+select emp.ename,emp.job,dept.deptno from emp inner join dept on emp.deptno=dept.deptno;
+
+纵向连接:合并【表结构相同】
+select name,math,english,'' as 'chinese' from t2 union select name,math,english,chinese from t3;
+
+mysql运算符：+ - * /	
+select 1+2;
+select 1-3;
+select 1*4;
+select 1/4;
+select 1 + 1, (10-1)/3, 2*2/2;
+select 1 + 1 from dual;		dual表,俗称万能表
+乘幂需要调用函数：-3表示2的三次幂取倒数
+mysql> select pow(2,3),power(2,3),pow(2,-3),power(2,-3);
++----------+------------+-----------+-------------+
+| pow(2,3) | power(2,3) | pow(2,-3) | power(2,-3) |
++----------+------------+-----------+-------------+
+|        8 |          8 |     0.125 |       0.125 | 
++----------+------------+-----------+-------------+
+1 row in set (0.00 sec)
+
+课堂练习：
+显示英语前三名：
+显示总分，以降序排列：
+显示总分第一名：
+显示英语最高分的姓名及分数：
+显示总成绩的平均分第一名:
+
+
+补充：
+修改数据库名：
+1、如果是MyISAM的话.只要修改DATA目录下面的那个库名的文件夹的名字就OK了
+2、如果是INNODB的话.不能直接修改数据库名，一种方法是比较保守的.直接把老库的内容mysqldump到新库里面
+3、可以先创建一个新库，然后再将原数据库对象转到新库里
+假设源库名是’srcdb’,目标库名是’trgdb’
+首先创建目标库
+create database trgdb;
+获取所有源库的表名
+use information_schema;
+select table_name from TABLES where TABLE_SCHEMA=’srcdb’;
+然后按照以下命令一个个修改
+rename table srcdb.[tablename] to trgdb.[tablename];
+一个个执行下来之后表就转到新的库里面了.
+

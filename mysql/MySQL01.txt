@@ -1,0 +1,703 @@
+
+
+关系型数据库（RDBMS）:RDBMS（relational database management system）指的是关系型数据库管理系统
+学生的信息（学号、姓名、性别、年龄、籍贯|学号、专业、班级、课程....）
+——>是以表的形式存在于数据库中（成千上万张表，并且表与表之间有相应的关系），那么这样的数据库就是所谓的关系型数据库
+
+主流的关系型数据库：oracle、mysql、DB2（IBM）、Sybase、SQL server（Microsoft微软）、IBM Informix
+
+关系型数据库，是指采用了关系模型来组织数据的数据库。简单来说，关系模型指的就是二维表格模型。
+
+优点：容易理解、方便使用、数据一致、读写实时等
+关系型数据库的最大特点就是事务的一致性：所以也在对事物一致性的维护中有很大的开销
+1.     登陆ATM机，输入密码；
+2.     连接数据库，验证密码；
+3.     验证成功，获得用户信息，比如存款余额等；
+4.     用户输入需要转账的金额，按下确认键；
+5.     从后台数据库中减掉用户账户上的对应金额；
+6.     从后台数据库中给对方账户增加相应的金额；
+7.      确认，退卡，走人；
+
+
+事务：
+事务由一条或者多条sql语句组成，在事务中的操作，这些sql语句要么都执行，要么都不执行，这就是一个事务。
+事务特点：
+1、原子性(Atomicity)：事务中的全部操作在数据库中是不可分割的，要么全部完成，要么均不执行。
+2、一致性(Consistency)：几个并行执行的事务，其执行结果必须与按某一顺序串行执行的结果相一致。
+3、隔离性(Isolation)：事务的执行不受其他事务的干扰，事务执行的中间结果对其他事务必须是透明的。
+4、持久性(Durability)：对于任何已提交事务，系统必须保证该事务对数据库的改变不被丢失。     
+
+
+在关系型数据库中，导致性能欠佳的最主要原因是多表的关联查询，以及复杂的数据分析类型的复杂SQL报表查询。
+
+应用场景：1、对数据的一致性要求较高；2、对读写的实时性要求较高；3、典型的银行及支付系统类；
+
+非关系型数据库：【nosql数据库】  分布式系统
+大数据特点：海量、高速、多样、价值
+多样：数据类型（结构化     半结构化       非结构化）
+                            |          |                     |
+                        RDBMS   XML-BLOG        图片、音频
+
+常见的非关系型数据库：MangoDB、Redis、Membase等
+应用场景：1、对数据库性能要求较高；2、需要灵活性更强的IT系统；3、不需要高度的数据一致性；
+
+http://db-engines.com/en/ranking   查看数据库排名
+
+Mysql数据库介绍：
+是由MySQL创始人和主要开发人在瑞典创办的一个mysql ＡＢ公司。
+
+2008年1月16号 MySQL被Sun公司收购。
+2009年04月20日Oracle收购Sun 公司，MySQL 转入Oracle 门下。
+Oracle 对MySQL版本重新进行了划分，分成了社区版和企业版，企业版是需要收费的，当然收费的就会提供更多的功能。
+
+社区版：MySQL Community Edition  (GPL) --社区版  
+1、可以看做是企业版的“广泛体验版（小白鼠版）”，未经各个专有系统平台的压力测试和性能测试
+2、基于GPL协议发布，可以随意下载使用
+3、没有任何官方技术支持服务
+
+企业版：MySQL Enterprise Edition  --企业版     MySQL Cluster CGE   -- 集群版
+1、提供了比较全面的高级功能、管理工具及技术支持
+2、安全性、稳定性、可扩展性比较好
+
+
+Mysql的获取：
+www.mysql.com
+
+
+Mysql安装：
+1、通过二进制的方式安装
+二进制安装方式中，包括rpm版本以及glibc版本。
+rpm版本就是在特定linux版本下编译的，如果你的linux版本匹配，就可以安装;
+还有另外一种二进制安装包为基于特定的glibc版本编译的;
+glibc是GNU发布的libc库，即c运行库。glibc是linux系统中最底层的api，几乎其它任何运行库都会依赖于glibc。
+		1) rpm(redhat/mysql rpm)
+		2) mysql glbic
+
+
+优点：安装和维护都比较方便，不需要编译。
+缺点：可定制性差，可移植性差，一个系统上只能安装一个mysql，不灵活
+		
+2、通过源代码编译的安装（mysql-xx.tar.gz）
+		
+优点：可定制性强（安装可以根据用户的需求，只安装所需要的功能）
+缺点：安装复杂，所需要的时间比二进制的安装要长得多		
+		
+3、构建自己的二进制rpm包
+优点：根据需求定制成自己的rpm包，方便安装维护。
+缺点：前期构建耗时较长,相对比较复杂
+
+
+二进制的安装：
+1.redhat mysql(RPM)		光盘中mysql老旧，漏洞多，如果一定要使用此版本，请到红帽的源码目录树中下载最新版本
+# yum list|grep ^mysql
+mysql.x86_64                     客户端
+mysql-bench.x86_64               压力测试工具包
+mysql-connector-java.noarch      连接器
+mysql-connector-odbc.x86_64  
+mysql-devel.i686                 开发包
+mysql-devel.x86_64           
+mysql-libs.i686                  库包（*.dll）,可以让其他第三方程序调用这些库文件，扩充软件功能
+mysql-libs.x86_64            
+mysql-server.x86_64              服务器 
+mysql-test.x86_64                测试库
+
+# service mysqld start
+2、mysql AB (RPM)    -mysql官方的RPM包，提供版本比较多，像suse/redhat/oracle linux
+
+MySQL-client-5.6.19-1.el6.x86_64.rpm   客户端
+MySQL-devel-5.6.19-1.el6.x86_64.rpm    开发工具包（其他软件需要调用到mysql的头文件或者库文件时安装）eg：proxy、监控软件等
+MySQL-embedded-5.6.19-1.el6.x86_64.rpm   嵌入式工具包
+MySQL-server-5.6.19-1.el6.x86_64.rpm     服务端
+MySQL-shared-5.6.19-1.el6.x86_64.rpm     工具包
+MySQL-shared-compat-5.6.19-1.el6.x86_64.rpm
+MySQL-test-5.6.19-1.el6.x86_64.rpm  测试库    
+
+安装服务端和客户端：
+1> 清理环境
+卸载掉已经安装的mysql
+2> 安装5.6.19rpm包
+
+# rpm -ivh MySQL-client-5.6.19-1.el6.x86_64.rpm 
+Preparing...                ########################################### [100%]
+   1:MySQL-client           ########################################### [100%]
+# rpm -ivh MySQL-server-5.6.19-1.el6.x86_64.rpm 
+Preparing...                ########################################### [100%]
+   1:MySQL-server           ########################################### [100%]
+2016-07-31 18:11:08 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+2016-07-31 18:11:08 8015 [Note] InnoDB: Using atomics to ref count buffer pool pages
+2016-07-31 18:11:08 8015 [Note] InnoDB: The InnoDB memory heap is disabled
+2016-07-31 18:11:08 8015 [Note] InnoDB: Mutexes and rw_locks use GCC atomic builtins
+2016-07-31 18:11:08 8015 [Note] InnoDB: Compressed tables use zlib 1.2.3
+2016-07-31 18:11:08 8015 [Note] InnoDB: Using Linux native AIO
+2016-07-31 18:11:08 8015 [Note] InnoDB: Using CPU crc32 instructions
+2016-07-31 18:11:08 8015 [Note] InnoDB: Initializing buffer pool, size = 128.0M
+2016-07-31 18:11:08 8015 [Note] InnoDB: Completed initialization of buffer pool
+2016-07-31 18:11:08 8015 [Note] InnoDB: The first specified data file ./ibdata1 did not exist: a new database to be created!
+2016-07-31 18:11:08 8015 [Note] InnoDB: Setting file ./ibdata1 size to 12 MB
+2016-07-31 18:11:08 8015 [Note] InnoDB: Database physically writes the file full: wait...
+2016-07-31 18:11:09 8015 [Note] InnoDB: Setting log file ./ib_logfile101 size to 48 MB
+2016-07-31 18:11:10 8015 [Note] InnoDB: Setting log file ./ib_logfile1 size to 48 MB
+2016-07-31 18:11:12 8015 [Note] InnoDB: Renaming log file ./ib_logfile101 to ./ib_logfile0
+2016-07-31 18:11:12 8015 [Warning] InnoDB: New log files created, LSN=45781
+2016-07-31 18:11:12 8015 [Note] InnoDB: Doublewrite buffer not found: creating new
+2016-07-31 18:11:12 8015 [Note] InnoDB: Doublewrite buffer created
+2016-07-31 18:11:12 8015 [Note] InnoDB: 128 rollback segment(s) are active.
+2016-07-31 18:11:12 8015 [Warning] InnoDB: Creating foreign key constraint system tables.
+2016-07-31 18:11:12 8015 [Note] InnoDB: Foreign key constraint system tables created
+2016-07-31 18:11:12 8015 [Note] InnoDB: Creating tablespace and datafile system tables.
+2016-07-31 18:11:12 8015 [Note] InnoDB: Tablespace and datafile system tables created.
+2016-07-31 18:11:12 8015 [Note] InnoDB: Waiting for purge to start
+2016-07-31 18:11:12 8015 [Note] InnoDB: 5.6.19 started; log sequence number 0
+A random root password has been set. You will find it in '/root/.mysql_secret'.
+2016-07-31 18:11:12 8015 [Note] Binlog end
+2016-07-31 18:11:12 8015 [Note] InnoDB: FTS optimize thread exiting.
+2016-07-31 18:11:12 8015 [Note] InnoDB: Starting shutdown...
+2016-07-31 18:11:14 8015 [Note] InnoDB: Shutdown completed; log sequence number 1625977
+
+
+2016-07-31 18:11:14 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+2016-07-31 18:11:14 8039 [Note] InnoDB: Using atomics to ref count buffer pool pages
+2016-07-31 18:11:14 8039 [Note] InnoDB: The InnoDB memory heap is disabled
+2016-07-31 18:11:14 8039 [Note] InnoDB: Mutexes and rw_locks use GCC atomic builtins
+2016-07-31 18:11:14 8039 [Note] InnoDB: Compressed tables use zlib 1.2.3
+2016-07-31 18:11:14 8039 [Note] InnoDB: Using Linux native AIO
+2016-07-31 18:11:14 8039 [Note] InnoDB: Using CPU crc32 instructions
+2016-07-31 18:11:14 8039 [Note] InnoDB: Initializing buffer pool, size = 128.0M
+2016-07-31 18:11:14 8039 [Note] InnoDB: Completed initialization of buffer pool
+2016-07-31 18:11:14 8039 [Note] InnoDB: Highest supported file format is Barracuda.
+2016-07-31 18:11:14 8039 [Note] InnoDB: 128 rollback segment(s) are active.
+2016-07-31 18:11:14 8039 [Note] InnoDB: Waiting for purge to start
+2016-07-31 18:11:14 8039 [Note] InnoDB: 5.6.19 started; log sequence number 1625977
+2016-07-31 18:11:14 8039 [Note] Binlog end
+2016-07-31 18:11:14 8039 [Note] InnoDB: FTS optimize thread exiting.
+2016-07-31 18:11:14 8039 [Note] InnoDB: Starting shutdown...
+2016-07-31 18:11:16 8039 [Note] InnoDB: Shutdown completed; log sequence number 1625987
+默认给root用户设置了一个随机密码
+A RANDOM PASSWORD HAS BEEN SET FOR THE MySQL root USER !
+You will find that password in '/root/.mysql_secret'.
+
+You must change that password on your first connect,
+no other statement but 'SET PASSWORD' will be accepted.
+See the manual for the semantics of the 'password expired' flag.
+
+Also, the account for the anonymous user has been removed.
+
+In addition, you can run:
+
+  /usr/bin/mysql_secure_installation   安全选项配置
+
+which will also give you the option of removing the test database.
+This is strongly recommended for production servers.
+
+See the manual for more instructions.
+
+Please report any problems at http://bugs.mysql.com/
+
+The latest information about MySQL is available on the web at
+
+  http://www.mysql.com
+
+Support MySQL by buying support/licenses at http://shop.mysql.com
+
+WARNING: Found existing config file /usr/my.cnf on the system.
+Because this file might be in use, it was not replaced,
+but was used in bootstrap (unless you used --defaults-file)
+and when you later start the server.
+The new default config file was created as /usr/my-new.cnf,
+please compare it with your file and take the changes you need.
+
+
+启动数据库：
+# service mysql start
+Starting MySQL....                                         [  OK  ]
+
+说明：
+从mysql的5.1版本后，官方所发布的mysql的服务名称发生了变化，以前是mysqld现在是mysql。
+
+启动服务：
+mysql启动原理
+		执行mysqld(服务端命)			
+		----> 根据参数读取配置文件或者直接给命令传递参数
+		----> 读取相应的数据文件和其他的物理文件（日志文件等）
+		----> 生成socket文件和在相应的端口上进行监听
+说明：rhel系统自动的数据库的启动脚本会判断数据目录是否为空，如果为空,它会自动初始化
+
+安全配置：
+# mysql_secure_installation 
+
+NOTE: RUNNING ALL PARTS OF THIS SCRIPT IS RECOMMENDED FOR ALL MySQL
+      SERVERS IN PRODUCTION USE!  PLEASE READ EACH STEP CAREFULLY!
+
+In order to log into MySQL to secure it, we'll need the current
+password for the root user.  If you've just installed MySQL, and
+you haven't set the root password yet, the password will be blank,
+so you should just press enter here.
+
+Enter current password for root (enter for none): 输入产生的随机密码不显示
+OK, successfully used password, moving on...
+
+Setting the root password ensures that nobody can log into the MySQL
+root user without the proper authorisation.
+
+You already have a root password set, so you can safely answer 'n'.
+
+Change the root password? [Y/n] y    是否更改root的密码
+New password: 
+Re-enter new password: 
+Password updated successfully!
+Reloading privilege tables..
+ ... Success!
+
+By default, a MySQL installation has an anonymous user, allowing anyone
+to log into MySQL without having to have a user account created for
+them.  This is intended only for testing, and to make the installation
+go a bit smoother.  You should remove them before moving into a
+production environment.
+默认情况下，mysql安装时会创建一个匿名用户，用做mysql测试来使用，这个匿名用户允许任何人从任何终端登陆到mysql，但是不能干其他事情，安全隐患。
+Remove anonymous users? [Y/n] y  是否移除匿名用户
+ ... Success!
+
+Normally, root should only be allowed to connect from 'localhost'.  This
+ensures that someone cannot guess at the root password from the network.
+通常情况下，root只允许从本地登陆到mysql的
+Disallow root login remotely? [Y/n] n    是否关闭root远程登录
+ ... skipping.
+
+By default, MySQL comes with a database named 'test' that anyone can
+access.  This is also intended only for testing, and should be removed
+before moving into a production environment.
+默认情况下，mysql会创建一个test库，用户测试，任何人都可以访问
+Remove test database and access to it? [Y/n] y  是否移除test库
+ - Dropping test database...
+ ... Success!
+ - Removing privileges on test database...
+ ... Success!
+
+Reloading the privilege tables will ensure that all changes made so far
+will take effect immediately.
+是否重读一下授权表，保证刚才的修改立即生效
+Reload privilege tables now? [Y/n] y  是否马上重新加载授权表
+ ... Success!
+
+All done!  If you've completed all of the above steps, your MySQL
+installation should now be secure.
+
+Thanks for using MySQL!
+Cleaning up...
+
+说明：默认情况下mysql数据库安装在/usr下；数据文件在/var/lib/mysql下
+
+客户端登录：
+mysql最基本的客户端工具就是mysql自带的mysql这个命令：
+参数：
+-u:指定登录用户名
+-p:指定登录密码  密码和参数之间不能有空格
+-h:指定数据库的主机地址
+-P：指定数据库的端口号
+-S:指定socket文件
+-e:使用非交互式操作
+
+
+默认可以简化成：
+# mysql -p
+默认root用户，从本机localhost登录，端口是3306
+
+# mysql -p -e "show databases;"
+Enter password: 
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
++--------------------+
+
+information_schema数据库：
+1、对象信息数据库，其中保存着关于MySQL服务器所维护的所有其他数据库的信息。
+2、在INFORMATION_SCHEMA中，有数个只读表。它们实际上是视图，而不是基本表，因此你将无法看到与之相关的任何文件。
+视图:
+    是一个虚表，即视图所对应的数据不进行实际存储，数据库中只存储视图的定义，在对视图的数据进行操作时，系统根据视图的定义去操作与视图相关联的基本表。
+    
+mysql数据库：
+    这个是mysql的核心数据库，主要负责存储数据库的用户、权限设置、关键字等mysql自己需要使用的控制和管理信息；
+    不可以删除,也不要轻易修改这个数据库里面的表息。
+    
+performance_schema 库：
+MySQL 5.5开始新增一个数据库：PERFORMANCE_SCHEMA，主要用于收集数据库服务器性能参数。并且库里表的存储引擎均为PERFORMANCE_SCHEMA，而用户是不能创建存储引擎为PERFORMANCE_SCHEMA的表。
+MySQL5.5默认是关闭的，需要手动开启，在配置文件里添加：
+[mysqld]
+performance_schema=ON
+从MySQL5.6开始，默认打开
+
+test数据库：
+这个是安装时候创建的一个测试数据库，和它的名字一样，是一个完全的空数据库，没有任何表，可以删除。
+
+后续配置：
+1》密码设置        rhel自带的5.1版本mysql默认管理员帐号是没有密码，任何人都可以连接
+修改密码三种方法：
+第一种：
+# mysqladmin -u root password "123"	--把root用户登录密码改为123
+# mysqladmin -u root password 'newpasswd' -p123	--有密码后，再使用这个命令改密码，就需要原密码
+
+第二种：
+使用sql语句在数据库内部直接修改用户密码表，password()是一个密码加密函数
+mysql> update mysql.user set password=password("789") where user="root" and host="localhost"; 
+或者
+mysql> use mysql;
+mysql> update user set password=password(123) where user='root' and host='localhost';	
+mysql> flush privileges;	--修改过密码后都要记得刷新权限表
+
+第三种：
+mysql> set password for 'root'@'localhost'=password('123'); --使用此操作语句也可以修改密码，修改后不需要刷新权限表
+
+2》修改配置文件
+默认读取的首选配置文件 /etc/my.cnf
+# cat /etc/my.cnf 
+[mysqld]	    用中括号括起来的叫参数组，用来针对不同的工具设定参数
+datadir=/var/lib/mysql	    数据文件存放的目录
+socket=/var/lib/mysql/mysql.sock	    socket文件是用于本地连接mysql数据库的接口文件，远程连接的话就要通过TCP／IP协议
+user=mysql	        管理mysql的系统用户
+# Disabling symbolic-links is recommended to prevent assorted security risks  禁止使用符号链接，防止安全隐患
+symbolic-links=0
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log	        错误日志文件
+pid-file=/var/run/mysqld/mysqld.pid	    pid文件
+
+注意：pid文件和socket文件是服务启动成功后才会有的
+
+
+问题1：
+忘记密码怎么办？
+1、停止数据库
+	使用service mysqld stop
+2、传递跳过授权表的参数启动数据库，免去帐号验证
+# mysqld_safe --defaults-file=/etc/my.cnf --skip-grant-tables &
+# mysql 
+mysql> update mysql.user set password=password('uplooking') where user='root' and host='localhost';
+mysql> flush privileges;  书先帐号权限信息，让密码生效
+或者
+1、可以在配置文件里加上
+skip-grant-tables	--注意写到[mysqld]参数组下，表示跳过授权
+2、/etc/init.d/mysqld  restart
+mysql    --登录就不需要密码，进去改密码,改完后,直接flush privileges就可以使用新密码来登录了
+3、改完后记得去掉skip-grant-tables重新reload
+4、再使用新的密码登录
+
+停止mysql的方法：
+# /etc/init.d/mysqld stop
+# mysqladmin shutdown -p123
+# pkill mysql	--实际环境不建议用
+
+3、glibc mysql(二制软件包)		mysql-xxx-glibc.tar.gz
+1>停止之前安装的mysql
+# service mysql stop
+Shutting down MySQL..                                      [  OK  ]
+2>下载并解压
+# tar -xf mysql-5.6.24-linux-glibc2.5-x86_64.tar.gz
+3>参考说明书进行安装
+# cd mysql-5.6.24-linux-glibc2.5-x86_64
+# less INSTALL-BINARY
+To install and use a MySQL binary distribution, the command
+   sequence looks like this:
+shell> groupadd mysql
+shell> useradd -r -g mysql mysql
+shell> cd /usr/local
+shell> tar zxvf /path/to/mysql-VERSION-OS.tar.gz
+shell> ln -s full-path-to-mysql-VERSION-OS mysql
+shell> cd mysql
+shell> chown -R mysql .
+shell> chgrp -R mysql .
+shell> scripts/mysql_install_db --user=mysql
+shell> chown -R root .
+shell> chown -R mysql data
+shell> bin/mysqld_safe --user=mysql &
+# Next command is optional
+shell> cp support-files/mysql.server /etc/init.d/mysql.server
+4>启动mysql
+# service mysql.server start
+Starting MySQL                                             [  OK  ]
+5>客户端连接数据库
+# mysql
+ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/lib/mysql/mysql.sock' (2)
+
+# ln -s /tmp/mysql.sock /var/lib/mysql/mysql.sock
+[root@vm1 mysql]# mysql
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 1
+Server version: 5.6.24 MySQL Community Server (GPL)
+
+或者
+# mysql --socket=/tmp/mysql.sock 
+默认是空密码
+
+说明：
+1、默认情况下安装在/usr/local/mysql ;数据文件在/usr/local/mysql/data;socket文件在/tmp目录下
+2、如果自己指定了安装路径，那么启动脚本需要自己修改才用户脚本能启动成功
+
+6>后续配置
+密码设置
+./bin/mysqladmin -u root password 'new-password'
+./bin/mysqladmin -u root -h vm1.uplook.com password 'new-password'
+安全选项配置
+./bin/mysql_secure_installation
+
+总结：
+以上安装方法，不需要配置编译，简单方便，但是可定制性差。
+
+
+怎么启动多个数据实例？
+
+
+步骤：
+1、创建相应的配置文件
+Mysql-5.6.19
+
+vim /var/lib/mysql/my.cnf
+basedir = /usr
+datadir = /var/lib/mysql
+port = 3306
+socket = /var/lib/mysql/mysql.sock
+
+Mysql-5.6.24
+
+vim /mysql/my.cnf
+basedir = /mysql
+datadir = /mysql/data
+port = 3307
+socket = /tmp/mysql.sock
+
+2、启动服务
+# service mysql start
+Starting MySQL...                                          [  OK  ]
+# service mysql.server start
+Starting MySQL........                                     [  OK  ]
+
+3、测试验证
+# netstat -lntp|grep mysql
+tcp        0      0 :::3307                     :::*                        LISTEN      13467/mysqld        
+tcp        0      0 :::3306                     :::*                        LISTEN      13264/mysqld        
+
+# mysql -S /var/lib/mysql/mysql.sock -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 1
+Server version: 5.6.19 MySQL Community Server (GPL)
+
+
+# mysql -S /tmp/mysql.sock
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 1
+Server version: 5.6.24 MySQL Community Server (GPL)
+
+
+另外一种启动方式：
+
+# /usr/bin/mysqld_safe --defaults-file=/usr/my.cnf &
+
+# /mysql/bin/mysqld_safe --defaults-file=/mysql/my.cnf &
+
+
+
+mysqld_safe
+        mysqld_safe-->$basedir/bin/mysqld --defaults-file=/xxx/my.cnf
+
+/etc/init.d/xxx
+        /etc/init.d/xxx-->mysqld_safe-->$basedir/bin/mysqld --defaults-file=/xxx/my.cnf
+
+
+4、源码包安装 5.6.25
+环境清理：
+[root@vm1 soft]# rpm -aq |grep MySQL
+MySQL-server-5.6.19-1.el6.x86_64
+MySQL-client-5.6.19-1.el6.x86_64
+[root@vm1 soft]# rpm -e MySQL-client
+[root@vm1 soft]# rpm -e MySQL-server
+
+# id mysql
+uid=496(mysql) gid=493(mysql) groups=493(mysql)
+# userdel -r mysql
+
+步骤：
+1、下载源码包
+mysql-5.6.25.tar.gz
+# md5sum mysql-5.6.25.tar.gz 
+37664399c91021abe070faa700ecd0ed  mysql-5.6.25.tar.gz
+2、解压到相应的目录
+tar -xf  mysql-5.6.25.tar.gz -C /usr/src
+3、安装三部曲
+1>安装相应的软件包
+[root@vm1 mysql-5.6.25]# rpm -q cmake
+package cmake is not installed
+[root@vm1 mysql-5.6.25]# rpm -q make
+make-3.81-20.el6.x86_64
+[root@vm1 mysql-5.6.25]# yum -y install cmake
+[root@vm1 mysql-5.6.25]# yum groupinstall "Development tools"
+[root@vm1 mysql-5.6.25]# yum -y install ncurses-devel
+2>创建相应的用户组及目录并授权
+[root@vm1 ~]# useradd -r mysql
+[root@vm1 ~]# id mysql
+uid=496(mysql) gid=493(mysql) groups=493(mysql)
+# chown mysql. /usr/src/mysql.5.6.25
+# mkdir /usr/local/mysql
+# chown mysql.mysql -R /usr/local/mysql
+# mkdir /data
+# chown mysql.mysql -R /data
+
+3>根据需求进行配置
+参考官方文档
+默认情况下载当前目录下直接可以配置
+shell> cmake . -LAH  查看所有支持的配置选项
+shell> cmake .
+
+CMAKE_INSTALL_PREFIX  /usr/local/mysql      安装路径
+DEFAULT_CHARSET  latin1      拉丁 默认字符集
+DEFAULT_COLLATION    latin1_swedish_ci     指定服务器默认的校对规则（排序规则）
+ENABLED_LOCAL_INFILE    OFF     是否开启内部加载外部文件功能  默认off  1代表开启0代表关闭
+* MYSQL_DATADIR                     数据文件目录
+* SYSCONFDIR                           初始化参数文件目录（主配置文件路径（默认优先去/etc目录去找））
+* MYSQL_TCP_PORT                    服务端口号，默认3306
+* MYSQL_UNIX_ADDR                   socket文件路径，默认/tmp/mysql.sock 
+* WITHOUT_xxx_STORAGE_ENGINE        指定不编译的存储引擎
+* WITH_xxx_STORAGE_ENGINE       指定静态编译到mysql的存储引擎，MyISAM，MERGE，MEMBER以及CSV四种引擎默认即被编译至服务器，不需要特别指定。
+* WITH_EXTRA_CHARSETS    扩展字符集
+
+字符集与字符编码
+字符是各种文字和符号的总称，包括各个国家文字、标点符号、图形符号、数字等。字符集是多个字符的集合，字符集种类较多，每个字符集包含的字符个数不同，
+计算机要准确的处理各种字符集文字，需要进行字符编码，以便计算机能够识别和存储各种文字。也就是说字符编码是字符集的实现方式。
+但需要注意的是：有的字符编码和字符集的名称是一致的。
+ 
+常见的字符集
+　　　　Unicode：也叫统一字符集，它包含了几乎世界上所有的已经发现且需要使用的字符（如中文、日文、英文、德文等）。
+　　　　ASCII：早期的计算机系统只能处理英文，所以ASCII也就成为了计算机的缺省字符集，包含了英文所需要的所有字符。
+　　　　GB2312：中文字符集，包含ASCII字符集。ASCII部分用单字节表示，剩余部分用双字节表示。
+　　　　GBK：GB2312的扩展，但完整包含了GB2312的所有内容。
+　　　　GB18030：GBK字符集的超集，常叫大汉字字符集，也叫CJK（Chinese，Japanese，Korea[kə'rɪə]）字符集，包含了中、日、韩三国语言中的所有字符。
+常见的字符编码：
+UTF-8 UTF-16 UCS-2 UCS-4 
+GBK/GB2312
+GB18030
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  字符编码 ||  每个字符字节数 ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ASCII ||  1  ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  UCS-2(Unicode) ||  2 ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  UCS-4(Unicode) ||  4 ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  UTF-8(Unicode) ||  1 - 6 ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  UTF-16(Unicode) ||  2 - 4 ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  GBK/GB2312(中文) ||  1 - 2 ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  GB18030(CJK) ||  1 - 4 ||
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+编写cmake脚本：
+vim cmake.sh
+#!/bin/bash
+cmake . \
+-DCMAKE_INSTALL_PREFIX=/usr/local/mysql \
+-DENABLED_LOCAL_INFILE=1 \
+-DMYSQL_DATADIR=/data/mysql \
+-DSYSCONFDIR=/etc \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_PARTITION_STORAGE_ENGINE=1 \    支持分区
+-DMYSQL_UNIX_ADDR=/data/mysql.sock \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_EXTRA_CHARSETS=all \
+-DMYSQL_USER=mysql
+
+
+chmod +x cmake.sh
+
+说明：如果第一次配置出错，再次配置前删掉上一次的缓存文件
+rm -f  CMakeCache.txt
+4>编译
+指定cpu个数编译
+cat /proc/cpuinfo |grep processor|wc -l
+make -j 2
+
+5>安装
+make install
+
+4、后续配置
+
+cd /usr/local/mysql/support-files
+cp mysql.server /etc/init.d/mysql
+cp my-default.cnf /etc/my.cnf
+vim /etc/my.cnf
+[mysqld]
+
+basedir = /usr/local/mysql
+datadir = /data/mysql
+port = 3306
+#server_id = .....
+socket = /data/mysql.sock   socket文件是用于本地连接mysql数据库的接口文件，远程连接的话就要通过TCP／IP协议
+log-error=/data/mysql-err.log
+
+
+初始化数据库（安装默认的库和表）：
+cd /usr/local/mysql/scripts
+
+# ./mysql_install_db --help
+
+--no-defaults:不要从任何的配置文件中读取相应的参数，忽略掉mysql安装过程中的默认配置，如创建默认用户并设置默认密码等
+
+# ./mysql_install_db --basedir=/usr/local/mysql --datadir=/data/mysql --no-defaults --user=mysql 
+
+启动数据库：
+报错：
+# service mysql start
+Starting MySQL.The server quit without updating PID file (/mysql/data/vm1.uplook.com.pid).[FAILED]
+解决：
+chown mysql.mysql /mysql -R
+
+环境变量：
+export PATH=$PATH:/usr/local/mysql/bin
+
+# mysql
+ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/lib/mysql/mysql.sock' (2)
+[root@vm1 data]# mysql --socket=/data/mysql.sock 
+
+
+# ln -s /data/mysql.sock /var/lib/mysql/mysql.sock
+
+# mysql
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 2
+Server version: 5.6.25 Source distribution
+
+Copyright (c) 2000, 2014, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> exit
+Bye
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
