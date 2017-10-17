@@ -1,0 +1,509 @@
+﻿for 语法结构：
+for var in { list }
+  do
+	commands...
+  done
+
+for var in var1 var2 var3...
+   do
+	commands...
+   done
+
+for var
+do
+	commands...
+done
+
+# cat 1.sh 
+#!/bin/bash
+for var
+do
+ echo $var
+done
+echo "$#"
+
+# bash -x 1.sh a b c
+
+demo:计算出1-100的奇数和
+方法1：
+#!/bin/bash
+sum=0
+for i in {1..100..2}
+  do
+	sum=$[$sum+$i]
+  done
+echo "1-100的奇数和为：$sum"
+
+方法2：
+#!/bin/bash
+sum=0
+for i in `seq 100`
+  do
+    if [ $[$i%2] -eq 1 ];then
+        let sum=$sum+$i
+    fi
+  # [ $[$i%2] -ne 0 ] && sum=$[$sum+$i]
+  done
+echo "1-100的奇数和为：$sum"
+
+方法3：
+#！/bin/bash
+sum=0
+for i in {1..100}
+do
+if [ $[$i%2] -eq 0 ];then
+     continue
+else
+    let sum=$sum+$i
+fi
+done
+echo "1-100的奇数和为：$sum"
+
+[ $[$i%2] -eq 0 ] || let sum=$sum+$i && continue
+
+[ $[$i%2] -eq 0 ] && continue || let sum=$sum+$i 
+
+&& > || > !
+-a > -o > !
+
+; || &&
+以上三个都可以用来分割命令，区别在于：
+； 不管前面的命令是否执行成功都执行
+|| 前面的命令或者条件为假才执行后面的内容
+&& 前面的命令或者条件为真才执行后面的内容
+
+注意：如果多重条件判断的化，那么需要考虑优先级 
+
+
+until	循环	  条件为真就退出循环；条件为假就死循环
+until expression
+         do 
+         command
+         command
+         …
+         done
+
+
+
+
+demo1：用until实现打印1到5和
+# i=1;until [ $i -gt 5 ];do echo $i;let i++;done
+# i=1;until (( $i >= 6 ));do echo $i;let i++;done
+# i=1;until (( $i >= 6 ));do echo $[6-$i];let i++;done
+demo2：用until改写批量创建用户
+stu1  /rhome/stu1 ...
+#!/bin/bash
+#判断用户的家是否存在 /rhome
+dir=/rhome
+[ ! -d $dir ] && mkdir $dir
+# test ! -d $dir && mkdir $dir
+i=1
+until [ $i -gt 3 ]
+do
+	useradd -d $dir/stu$i stu$i
+	echo 123|passwd --stdin stu$i &>/dev/null
+	let i++	
+done
+
+
+while	循环 满足条件（真）就进入死循环；条件为假就退出循环
+
+ while expression   只要条件满足就一直循环
+  do
+     command
+    command
+
+ done
+
+demo：
+写一个30秒同步一次时间同步服务器10.1.1.254的脚本,如果同步失败，则进行邮件报警,每次失败都报警;同步成功,也进行邮件通知,但是成功100次才通知一次。
+
+#!/bin/bash
+count=0
+ip=10.1.1.254
+while true
+do
+  rdate -s $ip &>/dev/null
+  [ $? -ne 0 ] && echo check system date failed |mail root || let count++
+  if [ $count -eq 100 ];then
+	echo check system success|mail root;count=0
+  fi
+  # [ $[$count%100] -eq 0 ] && echo check system success|mail root
+  sleep 30
+
+done
+
+#!/bin/bash
+count=0
+ip=10.1.1.254
+while true
+do
+  rdate -s $ip &>/dev/null
+  [ $? -ne 0 ] && echo check system date failed |mail root || let count++
+  [ $count -eq 3 ] && echo check system success|mail root && count=0
+  sleep 5
+done
+
+
+[ $[$count%3] -eq 0 ] && echo check system success|mail root
+以上脚本有bug，如果失败的失败的邮件和成功邮件都会发送，如果修补？
+
+
+
+总结：
+用至少三种方法打印1~5和5~1
+for until while
+
+ 1129  for ((i=5;i>=1;i--));do echo $i;done
+ 1130  i=5;until [ $i -lt 1 ];do echo $i;let i--;done
+ 1131  i=1;while (( $i <= 5 ));do echo $[6-$i];let i++;done
+
+
+随机数：
+bash默认有一个$RANDOM的变量	默认是0~32767。使用set |grep RANDOM	查看上一次产生的随机数
+
+echo $RANDOM
+
+产生0~1之间的随机数
+echo $[$RANDOM%2]
+
+产生0~2之间的随机数
+echo $[$RANDOM%3]
+
+产生0~3之间的随机数
+echo $[$RANDOM%4]
+。。。。
+产生0~9内的随机数
+echo $[$RANDOM%10]
+
+产生0~100内的随机数
+echo $[$RANDOM%101]
+
+
+产生50-100之内的随机数
+echo $[$RANDOM%51+50]
+
+产生三位数的随机数
+echo $[$RANDOM%900+100]
+
+
+demo1：
+写一个脚本，产生一个phonenum.txt文件，随机产生以139开头的手机号1000个，每个一行。
+方法1：
+#!/bin/bash
+for i in `seq 1000`
+   do
+	n1=`echo $[$RANDOM%10]`
+	n2=`echo $[$RANDOM%10]`
+	n3=`echo $[$RANDOM%10]`
+	n4=`echo $[$RANDOM%10]`
+	n5=`echo $[$RANDOM%10]`
+	n6=`echo $[$RANDOM%10]`
+	n7=`echo $[$RANDOM%10]`
+	n8=`echo $[$RANDOM%10]`
+	echo "139$n1$n2$n3$n4$n5$n6$n7$n8" >> phone.txt
+   done
+
+方法2：
+#!/bin/bash
+count=0
+while true
+do
+	n1=`echo $[$RANDOM%10]`
+	n2=`echo $[$RANDOM%10]`
+	n3=`echo $[$RANDOM%10]`
+	n4=`echo $[$RANDOM%10]`
+	n5=`echo $[$RANDOM%10]`
+	n6=`echo $[$RANDOM%10]`
+	n7=`echo $[$RANDOM%10]`
+	n8=`echo $[$RANDOM%10]`
+	echo "139$n1$n2$n3$n4$n5$n6$n7$n8" >> phone.txt && let count++
+	if [ $count -eq 1000 ];then
+		break
+	fi
+	或者
+	[ $count -eq 1000 ] && break
+done
+
+方法3：
+
+
+
+demo2：再写一个脚本，在上面的1000个手机号里抽奖5个幸运观众，显示出这5个幸运观众。但只显示头3个数和尾号的4个数，中间的都用*代替
+#第一种抽法，每个人不限次数
+#!/bin/bash
+file=/shell/phone.txt
+for ((i=1;i<=5;i++))
+do
+	line=`cat phone.txt |wc -l`
+	luckline=`echo $[$RANDOM%$line+1]`
+	luckphone=`head -$luckline $file|tail -1`
+	echo "幸运观众是：139****${luckphone:7:4}"
+done
+
+#第二种抽法，每个人就只有一次机会
+#!/bin/bash
+file=/shell/phone.txt
+i=1
+until (( $i > 5 ))  while [ $i -le 5 ]
+do
+	line=`cat phone.txt |wc -l`
+	luckline=`echo $[$RANDOM%$line+1]`
+	luckphone=`head -$luckline $file|tail -1`
+	echo "幸运观众是：139****${luckphone:7:4}"
+	sed -i "/$luckphone/d" $file
+	let i++
+done
+
+
+嵌套循环：
+一个循环体内又包含另一个完整的循环结构，称为循环的嵌套。在外部循环的每次执行过程中都会触发内部循环，直至内部完成一次循环，才接着执行下一次的外部循环。for循环、while循环和until循环可以相互嵌套。
+
+demo1：打印如下图案
+1
+12
+123
+1234
+12345
+
+echo -n 12345  x轴
+echo
+
+
+demo2：打印如下图案
+
+5
+54
+543
+5432
+54321
+
+课堂练习：打印九九乘法表（三种方法）
+
+1*1=1
+
+1*2=2   2*2=4
+
+1*3=3   2*3=6   3*3=9
+
+1*4=4   2*4=8   3*4=12  4*4=16
+
+1*5=5   2*5=10  3*5=15  4*5=20  5*5=25
+
+1*6=6   2*6=12  3*6=18  4*6=24  5*6=30  6*6=36
+
+1*7=7   2*7=14  3*7=21  4*7=28  5*7=35  6*7=42  7*7=49
+
+1*8=8   2*8=16  3*8=24  4*8=32  5*8=40  6*8=48  7*8=56  8*8=64
+
+1*9=9   2*9=18  3*9=27  4*9=36  5*9=45  6*9=54  7*9=63  8*9=72  9*9=81
+
+
+作业：
+1、将/etc/passwd里的用户名分类，分为管理员用户，系统用户，普通用户。
+2、写一个倒计时脚本，要求显示离2016年4月4日（清明节）的凌晨0点，还有多少天，多少时，多少分，多少秒。
+3、写一个脚本把一个目录内的所有空文件都删除，最后输出删除的文件的个数。
+
+
+函数
+语法：
+function_name() {
+		command
+		command
+}
+
+
+function function_name() {
+		command
+		command
+}
+demo：函数定义
+函数名()
+{
+ ......
+}
+function 函数名()
+{
+ .......
+}
+
+return作用：
+        函数中的return命令返回函数中最后一个命令的退出状态或给定的参数值，该参数值的范围是0-256之间。如果没有return命令，函数将返回最后一个Shell的退出值。
+        
+函数调用：
+source function.sh  或者. function.sh
+1、在命令行进行调用
+2、写到用户环境变量里
+profile 、~/.bash_profile
+3、直接写到脚本里
+
+示例：使用函数批量创建user01~user05五个用户，要求事先判断该用户是否存在，如果存在删掉再创建
+
+
+*****************************************************************************************************
+正则表达式：
+什么是正则表达式？
+正则表达式（Regular Expression、regex或regexp，缩写为RE），也译为正规表示法、常规表示法，是一种字符模式，
+用于在查找过程中匹配指定的字符。
+
+许多程序设计语言都支持利用正则表达式进行字符串操作。例如，在Perl中就内建了一个功能强大的正则表达式引擎。
+正则表达式这个概念最初是由Unix中的工具软件（例如sed和grep）普及开的。
+
+支持正则表达式的程序如：locate find vim grep sed awk
+
+
+第一类正则表达式：
+
+前导字符（即位于元字符前面的字符）；所谓元字符就是指那些 在正则表达式中具有特殊意义的专用字符
+（1）.：				任意单个字符，除了换行符 
+（2）*：			    前导字符出现 0 次或连续多次  ab*能匹配“a”，“ab”以及“abb”，但是不匹配“cb”
+（3）.*：				任意长度的字符
+（4）^：				行的开头
+（5）$：				行的结尾
+（6）^$：			空行
+（7）[ ]			匹配指定字符组内的任一字符   
+（8） [^]         匹配不在指定字符组内的任一字符 
+（9）^[]              匹配以指定字符组内的任一字符开头   
+（10）^[^]            匹配不以指定字符组内的任一字符开头   
+（11）\<：			取单词的头
+（12）\>：			取单词的尾
+（13） \<\> 	    精确匹配符号 
+（14）   +			前导字符连续出现一次或者多次 例如，“zo+”能匹配“zo”以及“zoo”，但不能匹配“z”。+等价于{1,}。
+（15）  ?	 		 前导字符连续出现零次或者一次
+（16） \{n\}       匹配前面字符连续出现n次 
+（17）  \{n,\}        匹配前面字符至少出现n次 
+（18） \{n,m\}        匹配前面字符出现n次与m次之间 
+  (19)   \(..\)         保存被匹配的字符
+
+
+\d      匹配数字  [0-9]
+\w     匹配字母数字下划线[a-zA-Z0-9_]
+\s      匹配空格、制表符、换页符[\t\r\n]
+ 
+将192.168.0.254 换成 192.168.1.254
+# sed -n 's/\(192\.168\)\.0\.254/\1\.1\.254/p'      
+找出含有192.168的行，同时保留192.168并标记为标签1，之后可以使用\1来引用它。最多可以定义9个标签，从左边开始编号，最左边的是第一个。
+将helloworld yourself 换成hellolilei myself
+# sed -n 's/\(hello\)world your\(self\)/\1lilei my\2/p' 1.txt 
+hellolilei myself
+
+扩展类的正则表达式 grep -E | egerp
+扩展正则表达式元字符
++			匹配一个或多个前导字符
+?			匹配零个或一个前导字符
+a|b		匹配a或b
+()			组字符	   hello myself yourself     (my|your)self
+x{m}		字符x重复m次
+x{m,}		字符x重复至少m次
+x{m,n}	字符x重复m到n次
+
+# grep "root|ftp|adm" /etc/passwd
+# egrep "root|ftp|adm" /etc/passwd
+# grep -E "root|ftp|adm" /etc/passwd
+
+# grep -E 'o+gle' test.txt 
+# grep -E 'o?gle' test.txt 
+
+# egrep 'go{2,}' 1.txt
+# egrep '(my|your)self' 1.txt
+
+#grep -P '\d' test.txt
+#grep -P '\w' test.txt
+#grep -P '\s' test.txt
+
+
+通配符和正则表达式相应符号的区别：
+正则表达式            *（匹配0或多个前字符）   ？（匹配0或1个前字符）                         
+通配符                   *（匹配 0 或多个任意字符）   ？（匹配任意单个字符）   
+shell转义符:
+有时候，我们想让 通配符，或者元字符变成普通字符，不需要使用它。 shell提供转义符有三种。
+
+' '  (单引号) 	又叫硬转义，其内部所有的shell 元字符、通配符都会被关掉。注意，硬转义中不允许出现’(单引号)。
+" " (双引号) 	又叫软转义，其内部只允许出现特定的shell 元字符：$用于参数代换 `用于命令代替
+\   (反斜杠) 	 又叫转义，去除其后紧跟的元字符或通配符的特殊意义。
+
+
+
+第二类正则表达式(POSIX标准)：
+表达式       	功能                              		    示例
+[:alnum:]      字母与数字字符                         [[:alnum:]]+  
+[:alpha:]  	   字母字符(包括大小写字母)	        [[:alpha:]]{4}
+[:blank:]       空格与制表符                         	   [[:blank:]]*
+[:digit:]         数字字母                                   [[:digit:]]?
+[:lower:]       小写字母                            		[[:lower:]]{4,}
+[:upper:]      大写字母                            		[[:upper:]]+
+[:punct:]      标点符号                            		    [[:punct:]]
+[:space:]      包括换行符，回车等在内的所有空白		[[:space:]]+
+
+课堂练习：
+# cat test.txt 
+Aieur45869Root0000
+9h847RkjfkIIIhello
+rootHllow88000dfjj
+8ikuioerhfhupliooking
+hello world
+192.168.0.254
+welcome to uplooking.
+abcderfkdjfkdtest
+rlllA899kdfkdfj
+iiiA848890ldkfjdkfj
+abc
+12345678908374
+123456@qq.com
+123456@163.com
+abcdefg@uplooking.com23ed
+
+1、查找不以大写字母开头 的行（三种写法）。
+2、查找有数字的行（两种写法）
+3、查找一个数字和一个字母连起来的
+4、查找不以r开头的行
+5、查找以数字开头的   
+6、查找以大写字母开头的 
+7、查找以小写字母开头的 
+8、查找以点结束的   
+9、去掉空行   
+10、查找完全匹配abc的行		
+11、查找到A后有三个数字的行        
+12、统计root在/etc/passwd里出现了几次
+13、用正则表达式找出自己的IP地址、广播地址、子网掩码
+14、找出文件中的ip地址并且打印替换成172.16.2.254
+15、找出文件中的ip地址
+16、找出全部是数字的行
+17、找出邮箱地址
+
+grep --help:
+匹配模式选择：
+Regexp selection and interpretation:
+  -E, --extended-regexp     扩展正则
+  -F, --fixed-strings       PATTERN is a set of newline-separated fixed strings
+  -G, --basic-regexp        基本正则
+  -P, --perl-regexp         调用perl的正则
+  -e, --regexp=PATTERN      use PATTERN for matching
+  -f, --file=FILE           obtain PATTERN from FILE
+  -i, --ignore-case         忽略大小写
+  -w, --word-regexp        匹配整个单词
+  -x, --line-regexp         匹配正行
+  -z, --null-data           a data line ends in 0 byte, not newline
+
+
+作业1：
+写一个自动搭建apache服务的脚本，要求如下：
+1、用户输入web服务器的IP、域名以及数据根目录
+2、如果用户不输入则一直提示输入，直到输入为止
+3、当访问www.test.cc时可以访问到数据根目录里的首页文件“this is test page”
+
+
+作业2：
+1、 判断/tmp/run目录是否存在，如果不存在就建立，如果存在就删除目录里所有文件
+2、 输入一个路径，判断路径是否存在，而且输出是文件还是目录，如果是字符连接，还得输出是有效的连接还是无效的连接 
+3、交互模式要求输入一个ip，然后脚本判断这个IP 对应的主机是否 能ping 通，输出结果类似于：
+	Server  10.1.1.20 is Down! 最后要求把结果邮件到本地管理员root@localhost和mail01@localhost
+4、写一个脚本/home/program，要求当给脚本输入参数hello时，脚本返回world,给脚本输入参数world时，脚本返回hello。而脚本没有参数或者参数错误时，屏幕上输出“usage:/home/program hello or world”
+5、写一个脚本自动搭建nfs服务
+
+
+
+
+
+
+

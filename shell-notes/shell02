@@ -1,0 +1,450 @@
+整数对比表达式：
+	arg1 OP arg2
+		-eq 			equal等于
+		-ne			not equal不等于
+		-lt			    lesser than小于
+		-le			    lesser equal小于等于
+		-gt			granter than大于
+		-ge			granter equal大于等于
+
+[root@foundation0 Desktop]# one=`tail -1 /etc/passwd |cut -d':' -f3 `
+[root@foundation0 Desktop]# [ $one -ne 0 ] && echo "这个肯定不是root用户"
+这个肯定不是root用户
+[root@foundation0 Desktop]# one=`head -1 /etc/passwd |cut -d':' -f3 `
+[root@foundation0 Desktop]# [ $one -ne 0 ] && echo "这个肯定不是root用户"
+[root@foundation0 Desktop]# [ $one -eq 0 ] && echo "这个肯定是root用户"
+
+[root@foundation0 Desktop]# [ $one -eq 0 ] && [ -f /etc/passwd ] && echo YES
+YES
+[root@foundation0 Desktop]# [ $one -eq 0 ] && [ -d /etc/passwd ] && echo YES
+[root@foundation0 Desktop]# [ $one -eq 0 ] || [ -d /etc/passwd ] && echo YES
+YES
+[root@foundation0 Desktop]# [ $one -eq 0 ] || [ ! -d /etc/passwd ] && echo YES
+YES
+[root@foundation0 Desktop]# [ $one -eq 0 ] && [ ! -d /etc/passwd ] && echo YES
+YES
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+结构化语句：
+
+
+简单的if结构是：
+      if  expression
+      then 
+          command
+          command
+           …
+     fi
+
+
+实例1：
+
+[root@foundation0 Desktop]# if [ 0 -eq 0 ]; then echo YES; fi
+YES
+
+vim if.sh
+#!/bin/bash
+
+if [ 0 -eq 0 ]
+then
+	echo YES
+fi
+
+if [ 1 -eq 1  ]
+then
+ echo YES
+fi
+
+
+if [ 1 -eq 1  ] ;then
+ echo YES
+fi
+
+
+if/else结构
+
+命令是双向选择语句，当用户执行脚本时如果不满足if后的表达式也会执行else后的命令，所以有很好的交互性。其结构为：
+       if expression1
+       then 
+              command
+              …
+              command
+        else 
+              command
+              …
+              command
+        fi
+
+vim if1.sh
+#!/bin/bash
+one=`tail -1 /etc/passwd |cut -d':' -f1`
+if [ $one == "root" ]
+then
+        echo "这是root用户"
+else
+        echo "这是非root用户"
+fi
+
+
+if/elif/else结构
+
+if/elif/else结构针对某一事件的多种情况进行处理。通常表现为“如果满足某种条件，则进行某种处理，否则接着判断另一个条件，直到找到满足的条件，然后执行相应的处理”。其语法格式为：
+
+ if expression1
+    then    
+         command                                               
+         command
+         …
+    elif expression2
+    then
+         command
+        command
+        …
+
+
+elif expressionN
+then
+    command
+    …
+    command
+else 
+   command
+    …
+   command
+fi
+
+
+vim if2.sh
+#!/bin/bash
+read -p "请输入你想判断的文件名称：" file
+
+if [ -f $file ]
+then
+	echo "$file is file"
+elif [ -d $file ]
+then
+	echo "$file is Dir"
+elif [ -L $file ]
+then
+	echo "$file is Link file"
+else
+	echo "i donot konw"
+fi
+
+实例：
+成绩判断：
+100～85 优秀
+85～75 良好
+75～60 及格
+60以下不及格
+通过获取变量判断该学生的成绩属性
+
+
+vim if3.sh
+#!/bin/bash
+
+read -p "请输入你的成绩：" number
+if [ $number -le 100 ] && [ $number -ge 85 ]
+	then
+		echo "优秀"
+elif [ $number -lt 85  -a  $number -ge 75 ]
+	then
+		echo "良好"
+elif [ $number -lt 75  -a  $number  -ge 60 ]
+	then
+		echo "及格"
+elif [ $number -lt 60 -a $number -ge 0 ]
+	then
+		echo "不及格"
+else
+	echo "你想搞事情吗？"
+fi
+
+
+case  $变量名称 in   <==关键字为 case ，还有变数前有钱字号
+  "第一个变数内容")   <==每个变数内容建议用双引号括起来，关键字则为小括号 )
+	程式段
+	;;            <==每个类别结尾使用两个连续的分号来处理！
+  "第二个变数内容")
+	程式段
+	;;
+  *)                  <==最后一个变数内容都会用 * 來代表所有其他值
+	不包含第一个变数内容与第二个变数内容的其它程式执行段
+	;;
+esac                  <==最终 case 结尾
+
+
+列表for循环语句用于将一组命令执行已知的次数，下面给出了for循环语句的基本格式：
+                         for variable in { list}
+                        do
+                               command 
+                               command
+                                …
+                        done
+其中do和done之间的命令称为循环体，执行次数和list列表中常数或字符串的个数相同。
+当执行for循环时，首先将in后的list列表的第一个常数或字符串赋值给循环变量，然后执行循环体；接着将list列表中的第二个常数或字符串赋值给循环变量，再次执行循环体，这个过程将一直持续到list列表中无其他的常数或字符串，然后执行done命令后的命令序列。
+
+在指定的区间中来循环
+[root@rhel7 ~]# for i in root test1 student
+> do
+> echo "$i is my user"
+> done
+root is my user
+test1 is my user
+student is my user
+
+
+for varible1 in {1..5}
+do
+     echo "Hello, Welcome $varible1 times "
+done
+
+Hello, Welcome 1 times 
+Hello, Welcome 2 times 
+Hello, Welcome 3 times 
+Hello, Welcome 4 times 
+Hello, Welcome 5 times 
+
+for i in {N M K}
+
+N是起始点
+K是步长
+M是结束点
+[root@rhel7 ~]# for i in {1..10..2}; do echo $i; done
+1
+3
+5
+7
+9
+
+
+vim for_exam3.sh 
+#!/bin/bash
+sum=0
+
+for i in {1..10..2}
+do
+    let "sum+=i"
+done
+    
+echo "sum=$sum"
+
+sum+=i	----sum=sum+i
+1  4  9 16 25
+
+求1到10的奇数和
+[root@rhel7 ~]# sh -x  for1.sh		-- -x查看脚本运行过程
++ sum=0
++ for i in '{1..10..2}'
++ let ' sum+=i '
++ for i in '{1..10..2}'
++ let ' sum+=i '
++ for i in '{1..10..2}'
++ let ' sum+=i '
++ for i in '{1..10..2}'
++ let ' sum+=i '
++ for i in '{1..10..2}'
++ let ' sum+=i '
++ echo sum=25
+sum=25
+
+求1到100的偶数和
+
+
+实例1：
+统计指定目录下的文件个数、目录个数、可执行文件个数
+vim for2.sh
+
+#!/bin/bash
+read -p "请输入想要查看的目录：" dir
+filecount=0
+dircount=0
+linkcount=0
+cd $ dir
+for i in $(ls)
+do
+	if [ -f $i ]
+	then
+	 let filecount=filecount+1
+	fi
+	if [ -d $i ]
+	then
+	 let dircount=dircount+1
+	fi
+	if [ -L $i ]
+	then
+	 let linkcount=linkcount+1
+	fi
+done
+	echo "filecount=$filecount"
+	echo "dircount=$dircount"
+	echo "linkcount=$linkcount"
+
+
+filecount=find $dir -type f |wc -l
+dircount=find $dir -type d |wc -l
+
+
+
+实例2：
+写一个脚本，把能ping通的IP和不能ping通的IP分类，并保存到两个文本文件里（如果例举整个网段的254个IP花的时间比较长，可以只分类10.1.1.1到10.1.1.10这十个IP）
+
+:> /tmp/tong
+:> /tmp/butong
+for i in {1..254}
+do
+	ping  -c 3 172.25.254.$i &> /dev/null
+	if [ $? -eq 0 ]
+	then
+		echo "172.25.254.$i" >>/tmp/tong
+	else
+		echo "172.25.254.$i" >>/tmp/butong
+	fi
+done
+
+
+实例3：
+批量新建10个用户
+1、所有用户的初始化密码是uplooking
+2、所有用户每30天需要改一次密码，如果不改密码，在密码过期后三天账号不可用
+3、所有的账号第一登录时都需要强制修改密码
+
+for i in {1..10}
+do
+useradd user$i
+echo uplooking |passwd --stdin user$i
+chage -d 0 user$i
+chage -M 30 -I 3 user$i
+done
+
+
+实例4：
+猜数字
+
+#!/bin/bash
+
+echo "Please input the num:"
+read num
+
+signal=0
+
+while [[ "$signal" != 1 ]]
+do 
+   if [ "$num" -lt 4 ]
+   then
+        echo "Too small. Try again!"
+        read num
+   elif [ "$num" -gt 4 ]
+   then
+         echo "To high. Try again" 
+         read num
+    else
+         signal=1
+         echo " Congratulation, you are right! "
+   fi
+
+done
+
+vim while1.sh
+#!/bin/bash
+
+while [[ $# -ne 0 ]]
+do
+        echo $1
+        shift 2
+done
+
+[root@rhel7 test]# sh -x shift.sh 1 2 3 4 5 6 
++ [[ 6 -ne 0 ]]
++ echo 1
+1
++ shift 2
++ [[ 4 -ne 0 ]]
++ echo 3
+3
++ shift 2
++ [[ 2 -ne 0 ]]
++ echo 5
+5
++ shift 2
++ [[ 0 -ne 0 ]]
+
+实例5：根据文本内容创建用户和密码：
+
+测试文本
+ vim /test/user_passwd.txt
+uu01    123
+uu02    456
+uu03    789
+uu04    012
+uu05    345
+
+vim while3.sh
+#!/bin/bash
+while [ $# -ne 0 ]
+do
+        useradd $1
+        echo $2 | passwd --stdin $1
+        shift 2
+done
+
+sh while3.sh `cat /test/user.txt`
+
+实例6：
+将/etc/passwd里的用户名分类，分为管理员用户，系统用户，普通用户
+
+
+#!/bin/bash
+for i in `cat /etc/passwd |cut -d: -f1,3`
+do
+        uid=`echo "$i" |cut -d: -f2`
+        name=`echo "$i" |cut -d: -f1`
+        [ $uid -eq 0 ] && echo "$name" >> /tmp/adminuser
+        [ $uid -lt 500 -a $uid -gt 0 ] && echo "$name" >> /tmp/systemuser
+        [ $uid -eq 65534 ] && echo "$name" >> /tmp/systemuser
+        [ $uid -ge 500 -a $uid -ne 65534 ] &&  echo "$name" >> /tmp/normaluser 
+done
+
+实例7：
+随机产生一个三位数(100-999)，按位数一个一个的猜（先猜百位，再十位，最后个位)，每位只有五次猜的机会，不成功就没机会再猜，直到猜成功
+
+
+[root@rhel7 test]# echo $[$RANDOM%900+100]	----随机三位数
+[root@rhel7 test]# echo $((($RANDOM%900+100)/100))	----百位数值
+8
+echo $(((((($RANDOM%900+100)%100))/10)))		---得出十位数
+	
+num=$[$RANDOM%900+100]
+echo $num
+baiwei=$[$num/100]
+shiwei=$((($num%100)/10))
+gewei=$[$num%10]
+
+vim test.sh
+#!/bin/bash
+echo "猜一个三位数"
+num=$[$RANDOM%900+100]
+for count1 in `seq 6`
+ do
+   [ $count1 -eq 6 ] && echo "你的机会用完了" && exit
+   read -p "请猜百位：" gnum1
+   [ $gnum1 -eq $[$num/100] ] && echo "对了" && break
+done
+
+for count2 in `seq 6`
+do
+   [ $count2 -eq 6 ] && echo "你的机会用完了" && exit
+   read -p "请猜十位：" gnum2
+   [ $gnum2 -eq $[$num%100/10] ] && echo "对了" && break
+ done
+
+for count3 in `seq 6`
+do
+   [ $count3 -eq 6 ] && echo "你的机会用完了" && exit
+  read -p "请猜个位：" gnum3
+   [ $gnum3 -eq $[$num%100%10] ] && echo "对了" && break
+done
+echo "恭喜"
+

@@ -1,0 +1,817 @@
+SHELL 知识点 ---python 
+
+
+安装脚本 
+测试脚本
+备份脚本
+监控脚本
+启动脚本
+调式脚本
+
+
+
+
+
+
+ 5天
+ 
+ 第一天:
+-----------
+#1.shell介绍
+#  1) 作用  
+     人与机器之间的交互窗口
+     命令解释器
+#  2) 版本 bsh bash csh ksh zsh tcsh nash 
+#  3) 元素 forks exec
+**************************
+vim file01.sh
+#!/bin/bash 
+#注释
+#语法控制 if for while case until
+mkdir -p /tmp/abc
+if [ -e /tmp/abc ]
+then
+   echo "新建文件夹成功"
+fi
+---------------------------
+
+    forks  复制父shell的属性
+ 内部命令 if语句|echo   ---强制在父shell执行
+ 外部命令 mkdir         ---(父shell env)环境变量 ---继承forks
+
+
+[root@i ~]# type echo
+echo is a shell builtin
+[root@i ~]# type mkdir
+mkdir is /bin/mkdir
+
+ 总结： 脚本 尽量写入内部命令 提高脚本执行效率
+
+ chmod +x file01.sh
+强制执行
+  bash file01.sh
+
+
+**************************
+#2. bash特殊符号
+? 匹配任意1次
+* 匹配0次或者多次
+| 管道
+xargs   将上一条命令的返回参数，交给下一个命令处理    --传参数用 
+[] 或 [abc] [0-9] [a-z] [A-Z]
+{} 整体 
+   ${} 获取变量
+   ${10} 读取第10个位置变量  
+   {1..10}  循环体  1到10    seq 1 10 
+    奇数 {1..10..2}  seq 1 2 10
+    偶数 {2..10..2}  seq 2 2 10
+
+''  整体|转义为普通字符
+\   转义为普通字符 | 换行符
+[root@i ~]# echo '$PATH'
+$PATH
+[root@i ~]# echo \$PATH
+$PATH
+
+"" 整体|保持变量的属性
+[root@i ~]# echo "I LOVE YOU"
+I LOVE YOU
+[root@i ~]# echo I\ LOVE\ YOU
+I LOVE YOU
+
+`` 优先执行  $()
+
+
+&  后台执行   fg   bg 
+
+&& 逻辑与
+
+|| 逻辑或
+
+!  
+
+!key --调用历史记录
+! [ ]  逻辑非
+
+>  输出
+<  输入
+
+/dev/stdout  正确的标准输出   1> 
+/dev/stderr  错误的标准输出   2>   
+/dev/stdin   输入
+
+012
+0
+1
+2   /dev/null 
+>    正确的标准输出覆盖重定向
+2>   错误的标准输出覆盖重定向
+&>   正确与错误的标准输出覆盖重定向  >   2>&1
+
+[root@rhel5 ~]# ls /etc/passwd abc > /tmp/1   2>&1
+[root@rhel5 ~]# ls /etc/passwd abc &> /tmp/1
+
+
+>>   正确的标准输出追加重定向
+2>>  错误的标准输出追加重定向
+&>>  正确与错误的标准输出追加重定向
+
+
+[root@rhel5 ~]# ls /etc/passwd abc >> /tmp/all-new.out 2>&1
+[root@rhel5 ~]# ls /etc/passwd abc &>> /tmp/all-new.out
+-bash: syntax error near unexpected token `>'
+
+
+
+RHEL5 不支持&>> 
+[root@rhel5 ~]# ls /etc/passwd abc &>> /tmp/all-new.out
+-bash: syntax error near unexpected token `>'
+
+
+#3. shell的配置文件
+# user01-->login-->bash-->/etc/profile-->$HOME/.bash_profile-->$HOME/.bashrc-->/etc/bashrc
+
+/etc/profile  --全局选项 对所有版本的shell都加载
+/etc/bashrc   --bash shell的配置文件
+/etc/kshrc
+/etc/csh.cshrc
+/etc/zshrc
+
+$HOME/.bash_profile  --局部选项 针对某一个用户
+$HOME/.bashrc        --局部选项  针对某一个用户使用bash shell的配置文件
+
+[root@i ~]# ls /etc/skel/.bash*
+/etc/skel/.bash_logout   --登出脚本
+/etc/skel/.bash_profile  --环境变量env  $PATH $HOME $USER  
+/etc/skel/.bashrc        --用户的bash变量   
+
+#4. shell的变量定义
+全局变量 /etc/profile  --所有用户
+环境变量 /etc/profile  --针对程序用户
+用户变量 /etc/bashrc 
+临时变量 $HOME/.bash_profile  --针对所有会话
+会话变量 set变量
+
+#5. bash内置变量
+ $#  命令行中位置变量的个数
+ $*  命令行中位置变量的内容
+ $@  命令行中位置变量的内容
+ $!  后台运行的最后一个进程号 
+ $$  当前所在进程的进程号
+ $0  当前执行的进程/程序名
+ $1  第一个位置变量
+ $2  第2个位置变量
+
+#5. 有类型变量 declare
+#6. 数组
+
+  --定义数组 Var=(var1 var2 var2)
+# def=(a b c d) 
+  --获取所有的数组 ${Var[]}
+# echo ${def[*]}
+a b c d
+  --第一个数组
+[root@rhel5 ~]# echo ${def[0]}
+a
+
+
+区别 $@ 与  $*
+
+
+[root@rhel5 ~]# for i in "${A[*]}"; do echo hi,user$i; done
+hi,user1 2 3 4 5
+[root@rhel5 ~]# for i in "${A[@]}"; do echo hi,user$i; done
+hi,user1
+hi,user2
+hi,user3
+hi,user4
+hi,user5
+
+--注意
+所有位置参数的内容,与$*的分割任不一样，建议和所有的位置参数时使用$@
+-----------
+
+ 第二天
+
+Test语句   条件判断语句  [ ] -e -d -f -s -p 
+
+ 语句
+if [ ] ;then 
+...
+fi
+
+if [] ; then
+...
+else
+...
+fi
+
+
+if [] ;then
+...
+elif [];then
+...
+elif ....
+ ...
+else 
+ ...
+fi
+
+
+ for 循环
+
+for i in $variable
+do
+执行循环内容
+done 
+
+
+ while 条件为真 死循环
+
+while true 
+do
+...
+done
+
+
+  until 条件为假  死循环
+until [ 1 -ne 1 ]
+do
+...
+done
+
+
+ case 选择语句
+
+
+case $variable in
+
+$v1) 
+....
+ ;;
+$v2)
+....
+ ;;
+*)
+....
+esac
+
+-----启动脚本 /etc/init.d/vsftpd
+
+
+ select 菜单模式的选择方式
+[root@rhel5 ~]# select a in user01 user02
+> do
+> break
+> done
+1) user01
+2) user02
+
+ ------ 备份脚本(进程锁+备份)
+
+ 第三天 
+文本高级命令   wc|uniq|sort|cut|join|paste|split 
+正则表达式    vim|find|locate|grep|sed|awk
+
+
+第一类型
+   .  任意一个字符
+   *  前导符出现0次或者多次
+  .*  任意长度
+  ^   开头
+  $   结尾
+  ^$  空格
+  []  或 [0-9] [a-z] [A-Z]
+  ^[ab] 或a或b开头
+  [^ab] 非或a或b
+  ^[^ab] 非或a或b开头
+  \<     取单词的头
+  \>     取单词的尾
+
+扩展类型  grep -E  egrep  sed -r  转义\
+   ?  前导符出现0次或者1次 [0-1]
+   +  前导符出现1次以上    1,
+   {n} 前导符出现n次       n
+   {n,} 前导符出现n次以上  n,
+   {n,m} 前导符出现n到m次  n-m
+   {,m}  前导符出现m次以下
+   \< \> 精确匹配单词  
+
+第二类表达式
+POSIX标准
+[[:digit:]]：	数字		
+[[:lower:]]：	小写字母
+[[:upper:]]：	大写字母
+[[:space:]]：	空格	
+[[:alnum:]]	所有的字母和数字
+[[:alpha:]]	所有的字母
+[[:blank:]]	所有呈水平排列的空白字符
+[[:cntrl:]]	所有的控制字符
+[[:graph:]]	所有的可打印字符，不包括空格
+[[:lower:]]	所有的小写字母
+[[:print:]]	所有的可打印字符，包括空格
+[[:punct:]]	所有的标点字符
+[[:xdigit:]]	所有的十六进制数
+
+tr  替换  输入流
+\\		反斜杠
+  \a		终端鸣响
+  \b		退格
+  \f		换页
+  \n		换行
+  \r		回车
+  \t		水平制表符
+  \v		垂直制表符
+  字符1-字符2	从字符1 到字符2 的升序递增过程中经历的所有字符
+  [字符*]	在SET2 中适用，指定字符会被连续复制直到吻合设置1 的长度
+  [字符*次数]	对字符执行指定次数的复制，若次数以 0 开头则被视为八进制数
+  [:alnum:]	所有的字母和数字
+  [:alpha:]	所有的字母
+  [:blank:]	所有呈水平排列的空白字符
+  [:cntrl:]	所有的控制字符
+  [:digit:]	所有的数字
+  [:graph:]	所有的可打印字符，不包括空格
+  [:lower:]	所有的小写字母
+  [:print:]	所有的可打印字符，包括空格
+  [:punct:]	所有的标点字符
+  [:space:]	所有呈水平或垂直排列的空白字符
+  [:upper:]	所有的大写字母
+  [:xdigit:]	所有的十六进制数
+  [=字符=]	所有和指定字符相等的字符
+  
+######################################
+
+[root@zhibin ~]# tee --help
+用法：tee [选项]... [文件]...
+将标准输入复制到每个指定文件，并显示到标准输出。
+
+  -a, --append		内容追加到给定的文件而非覆盖
+  -i, --ignore-interrupts	忽略中断信号
+
+#####################################
+grep 参数
+
+正则表达式选择与解释:
+  -E, --extended-regexp     PATTERN 是一个可扩展的正则表达式(缩写为 ERE)
+  -F, --fixed-strings       PATTERN 是一组由断行符分隔的定长字符串。
+  -G, --basic-regexp        PATTERN 是一个基本正则表达式(缩写为 BRE)
+  -P, --perl-regexp         PATTERN 是一个 Perl 正则表达式
+  -e, --regexp=PATTERN      用 PATTERN 来进行匹配操作
+  -f, --file=FILE           从 FILE 中取得 PATTERN
+  -i, --ignore-case         忽略大小写
+  -w, --word-regexp         强制 PATTERN 仅完全匹配字词
+  -x, --line-regexp         强制 PATTERN 仅完全匹配一行
+  -z, --null-data           一个 0 字节的数据行，但不是空行
+
+Miscellaneous:
+  -s, --no-messages         suppress error messages
+  -v, --invert-match        select non-matching lines
+  -V, --version             display version information and exit
+      --help                display this help text and exit
+
+输出控制:
+  -m, --max-count=NUM       NUM 次匹配后停止
+  -b, --byte-offset         输出的同时打印字节偏移
+  -n, --line-number         输出的同时打印行号
+      --line-buffered       每行输出清空
+  -H, --with-filename       为每一匹配项打印文件名
+  -h, --no-filename         输出时不显示文件名前缀
+      --label=LABEL         将LABEL 作为标准输入文件名前缀
+  -o, --only-matching       show only the part of a line matching PATTERN
+  -q, --quiet, --silent     suppress all normal output
+      --binary-files=TYPE   assume that binary files are TYPE;
+                            TYPE is 'binary', 'text', or 'without-match'
+  -a, --text                equivalent to --binary-files=text
+  -I                        equivalent to --binary-files=without-match
+  -d, --directories=ACTION  how to handle directories;
+                            ACTION is 'read', 'recurse', or 'skip'
+  -D, --devices=ACTION      how to handle devices, FIFOs and sockets;
+                            ACTION is 'read' or 'skip'
+  -r, --recursive           like --directories=recurse
+  -R, --dereference-recursive
+                            likewise, but follow all symlinks
+      --include=FILE_PATTERN
+                            search only files that match FILE_PATTERN
+      --exclude=FILE_PATTERN
+                            skip files and directories matching FILE_PATTERN
+      --exclude-from=FILE   skip files matching any file pattern from FILE
+      --exclude-dir=PATTERN directories that match PATTERN will be skipped.
+  -L, --files-without-match print only names of FILEs containing no match
+  -l, --files-with-matches  print only names of FILEs containing matches
+  -c, --count               print only a count of matching lines per FILE
+  -T, --initial-tab         make tabs line up (if needed)
+  -Z, --null                print 0 byte after FILE name
+
+文件控制:
+  -B, --before-context=NUM  打印以文本起始的NUM 行
+  -A, --after-context=NUM   打印以文本结尾的NUM 行
+  -C, --context=NUM         打印输出文本NUM 行
+  -NUM                      same as --context=NUM
+      --group-separator=SEP use SEP as a group separator
+      --no-group-separator  use empty string as a group separator
+      --color[=WHEN],
+      --colour[=WHEN]       use markers to highlight the matching strings;
+                            WHEN is 'always', 'never', or 'auto'
+  -U, --binary              do not strip CR characters at EOL (MSDOS/Windows)
+  -u, --unix-byte-offsets   report offsets as if CRs were not there
+                            (MSDOS/Window
+  
+########################
+find   命令高级用法
+-regex/字符/
+-maxdepth N 
+-o 
+-a 
+! 
+
+perm
+	+ 或a或b开头
+	- 与
+exec 
+
+###############################	
+
+第四天
+   vim  全文编辑器
+   sed  替换工具  行编辑器   流编辑器   对行进行编辑
+   
+ 文本编辑器  vim emacs  nano
+ 
+ sed是一种流编辑器，它一次处理一行内容。处理时，把当前处理的行存储在临时缓冲区中，称为“模式空间”（pattern space），
+ 接着用sed命令处理缓冲区中的内容，处理完成后，把缓冲区的内容送往屏幕。接着处理下一行，这样不断重复，直到文件末尾。
+ 文件内容并没有改变，除非你使用重定向存储输出。Sed主要用来自动编辑一个或多个文件；简化对文件的反复操作；编写转换程序等。
+  （通过非交互式来修改文本中的内容）
+ 命令模式
+ 
+sed   '命令清单'  file
+sed -r 's/regex/字符/g' files
+
+ 脚本模式 
+ sed -f   sed.txt(脚本文件)    file 
+#!/bin/sed -f 
+
+#命令清单
+s/regex1/字符1/g
+s/regex2/字符2/g
+ 
+sed 选项  '命令清单'  files
+
+选择
+  -n  只显示处理内容  通常p函数显示打印   sed -n 's/root/ROOT/gp /etc/passwd'
+  -r  支持扩展类型正则表达式 
+  -e	表示将下一个字符串解析为sed编辑命令，如果只传递一个编辑命令给sed，-e选项可以省略
+  -e  example  -->  sed -n -e 's/^root/ROOT/gp' -e 's/^lp/LP/p'   /etc/passwd  (执行多个命令清单)
+  -i  直接修改文件的innode属性 --文件内容
+  -f  执行脚本模式
+
+命令清单
+
+
+---函数
+p 	打印匹配行
+= 	打印文件行号
+a\ 	在定位行号之后追加文本信息
+i\ 	在定位行号之前插入文本信息
+d 	删除定位行
+s 	使用替换模式替换相应模式
+c\ 	用新文本替换定位文本
+r 	从另一个文件中读文本
+w 	将文本写入到一个文件
+y 	变换字符
+q 	第一个模式匹配完成后退出
+l 	显示与八进制ASCII代码等价的控制字符
+{} 	在定位行执行的命令组
+n 	读取下一个输入行，用下一个命令处理新的行
+h 	将模式缓冲区文本拷贝到保持缓冲区
+H 	将模式缓冲区文本追加到保持缓冲区
+x 	互换模式缓冲区和保持缓冲区内容
+g 	将保持缓冲区内容拷贝到模式缓冲区
+G 	将保持缓冲区内容追加到模式缓冲区
+ sed -n '1,10s/.*/#&/p'  /etc/pass   --1-10行内容注释
+
+
+
+./files.sed  /tmp/abc.out
+
+
+第五天
+  awk  列处理
+awk是一种编程语言，软件级别等同于bash,主要用于在linux/unix下对文本和数据进行处理。数据可以来自标准输入、一个或多个文件，
+或其它命令的输出。它支持用户自定义函数和动态正则表达式等先进功能，是linux/unix下的一个工具。它在命令行中使用，
+但更多是作为脚本来使用。awk的处理文本和数据的方式是这样的，它逐行扫描文件，默认从第一行到最后一行，寻找匹配的特定模式的行，
+并在这些行上进行你想要的操作。如果没有指定处理动作，则把匹配的行显示到标准输出(屏幕)，如果没有指定模式，
+则所有被操作所指定的行都被处理。awk分别代表其作者姓氏的第一个字母。因为它的作者是三个人，
+分别是Alfred Aho、Brian Kernighan、Peter Weinberger。gawk是awk的GNU版本，它提供了Bell实验室和GNU的一些扩展。
+下面介绍的awk是以GNU的gawk为例的，在linux系统中已把awk链接到gawk，所以下面全部以awk进行介绍。
+
+awk命令两种使用方式：
+1）命令模式
+		awk [options] 'commands' file(s)
+			command 部分：/范围说明(或者正则表达式)/{awk命令语句1；awk命令语句2；}
+				范围说明部分可以是BEGIN、END、逻辑表达式或者为空
+				awk命令语句间用分号间隔
+				引用shell 变量需用双引号引起
+			option 部分
+				-F 定义字段分割符号
+		
+2）脚本模式
+		awk [options] -f scriptfile file(s)
+		特点：
+			awk脚本是awk命令的清单
+			命令需要用分号间隔
+			#号开头的是注释行
+			# !/bin/awk -f 
+
+
+字段及分割
+	awk 用$1,$2,$3...$n等的顺序形式表示files中每行以间隔符号分割的各列的不同字段
+	$0表示文本本身
+	awk默认以空格符为间隔符号将每行分割为单独的字段，也可以使用awk内置变量FS定义间隔符号
+	awk 使用option中的-F参数定义默认间隔符号
+	NF变量表示当前记录的字段数（列数）
+	$NF	最后一列
+	$(NF-1)	倒数第二列
+	FNR/NR	行号
+	FILENAME 文件名
+	FS 在BEGIN后面指定分隔符
+	"\t"	制表符70 192.168.0.144 00:0c:29:2c:2f:2c
+
+	RS	换行符
+	""	打印字符串
+
+# awk 'BEGIN {FS=":"} {print $1}' /etc/passwd
+$ head -5 /etc/passwd > passwd
+$ awk -F':' '{print FILENAME,FNR,NF,$1,$2,$3,$4,$5,$6,$7,"\t"$0}' ./passwd 
+./passwd 1 7 root x 0 0 root /root /bin/bash    			root:x:0:0:root:/root:/bin/bash
+./passwd 2 7 bin x 1 1 bin /bin /sbin/nologin   			bin:x:1:1:bin:/bin:/sbin/nologin
+./passwd 3 7 daemon x 2 2 daemon /sbin /sbin/nologin    daemon:x:2:2:daemon:/sbin:/sbin/nologin
+./passwd 4 7 adm x 3 4 adm /var/adm /sbin/nologin       	adm:x:3:4:adm:/var/adm:/sbin/nologin
+./passwd 5 7 lp x 4 7 lp /var/spool/lpd /sbin/nologin   	lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+
+tail /var/log/messages | awk '{print $1,$2,$3"\t"$4"\t"$5}' | sed 's/.$//' | sed -e 's/.//15' -e 's/.//14' -e 's/.//13'
+tail  /var/log/messages |awk '{print $1,$2,$3,$4,$5}' | sed 's/:..//2' | sed 's/.$//'
+tail  /var/log/messages |awk '{print $1,$2,$3,$4,$5}' | awk -F: '{print $1,$2,$3}' | awk '{print $1,$2,$3":"$4,$6,$7,$8}'
+tail /var/log/messages | awk -F':| +' '{print $1,$2,$3":"$4,$6,$7}'
+
+Aug 27 10:31	instructor	named[3089]
+Aug 27 10:31	instructor	named[3089]
+Aug 27 10:31	instructor	named[3089]
+
+
+
+
+打印所有行
+$ cat passwd
+$ awk -F':' '{print $0}' passwd
+$ awk -F':' '{print}' passwd
+ifconfig eth0 | awk ' NR>1 {print $2}' | awk -F: 'NR<2 {print $2}'
+ifconfig  eth0 | grep 'Bcast' |awk -F':| +' '{print $4}'
+
+ifconfig eth0:0 10.10.10.10
+ifconfig eth0:0 |grep Bcast |awk -F':| +'  '{print $4"/"$NF}' | awk -F'.' '{print $1".0.0.0/255.0.0.0"}'
+
+
+
+取倒数第一列和倒数第二列
+$ head -1 passwd |awk -F':' '{print $NF,$(NF-1)}'
+/bin/bash /root
+
+换行符（默认处理一行后才换行）
+$ head -1 passwd |awk -F':' '{print $NF RS $(NF-1)}'
+/bin/bash
+/root
+$head -1 passwd | awk 'BEGIN {FS=":"} {print $NF RS $(NF-1)}' 
+
+awk  -F: '{print "第"FNR"行" RS $1,$NF }' passwd 
+
+
+一次指定多个分隔符
+$ awk -F':|/' '{print NF}' passwd 
+$ awk -F'[:/]' '{print NF}' passwd 
+$ ifconfig eth0|grep Bcast|awk -F':| +' '{print $4}' 
+$ifconfig eth0 |grep Bcast | awk -F" " '{print $2}'|awk -F":" '{print $2}'
+#ifconfig br0 | grep Bcast |awk -F' | +' '{print $NF}'
+
+
+定址:
+	1）关键字
+		BEGIN ：表示在程序开始前执行
+		END ：表示所有文件处理完后执行
+操作流程：
+#/bin/awk -f
+		BEGIN   {}	--读前处理(读取目标文件)
+		{}		--行处理
+		END {}	--读后处理
+
+
+打印标题和结尾信息
+$ awk -F':'  'BEGIN {print "user\tpasswd\thome"RS"----------------------"} ; {print $1"\t"$2"\t"$(NF-1)} ; END {print "<-----------END---------->"}' passwd 
+user    passwd  home
+----------------------
+root    x       /root
+bin     x       /bin
+daemon  x       /sbin
+adm     x       /var/adm
+lp      x       /var/spool/lpd
+<-----------END---------->
+
+$ awk   'BEGIN {FS=":"; print "user\tpasswd\thome"RS"----------------------"} ; {print $1"\t"$2"\t"$(NF-1)} ; END {print "<-----------END---------->"}' passwd 
+	
+2）正则表达式
+$ awk '/root/ {print $0}' /etc/passwd		--使用普通字符定位
+root:x:0:0:root:/root:/bin/bash
+operator:x:11:0:operator:/root:/sbin/nologin
+
+
+$ awk '$0 ~ /^root/ {print $0}' /etc/passwd		--使用正则表达式定位
+root:x:0:0:root:/root:/bin/bash
+
+x,y
+awk -F: 'NR==1,NR==5 {print $0 }' passwd  
+x,/key
+awk -F: 'NR==1,/^lp/ {print $0 }' passwd   
+/key/,x
+awk -F: '/^lp/,NR==10 {print $0 }' passwd 
+/key1/,/key2/
+awk -F: '/^root/,/^lp/{print $0 }' passwd 
+
+awk -F: 'NR==1,/^lp/{print $0 }' passwd            --从第一行开始匹配到以lp开头行
+awk -F: 'NR==1,NR==5{print $0 }' passwd       --从第一行到第5行
+awk -F: '/^lp/,NR==10 {print $0 }' passwd   
+awk -F: '/^root/,/^lp/{print $0 }' passwd 
+
+
+$ awk '/^[rR]oot|^[bB]in/ {print $0}' /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+# awk -F':' '/^[rR]oot|^[bB]in/ {print $1}' passwd 
+# awk -F: '/^[Rr][Oo][Oo][Tt]|^[Ff][tT][pP]/ {print $1}' aa   
+包含ftp或者root开头的不区分大小写组合
+
+awk  '/^[0-9]/ {print $0}' passwd           以数字开头
+
+awk  '/^[a-zA-Z]/ {print $0}' passwd     以任意大小写字母开头
+
+awk  '$0 ~ /^[a-zA-Z]/ {print $0}' passwd  
+
+
+使用正则表达式精确定位
+$ awk -F':' '$2=="" {print $0}' /etc/passwd		
+$ awk -F':' '$2=="" {print $0}' /etc/shadow	--查看用户中有无空密码的
+ awk -F: '/.*!.*|\*/ {print $1}' /etc/shadow     ---模糊匹配所有空密码用户
+$ awk -F':'  '$7 ~ /bash$/ {print $0}' /etc/passwd  -显示可以登录的用户所有信息
+从第7列匹配以bash结尾，输出整行（当前行所有的列）
+$awk -F: '$NF ~ /bash$/ {print $1}' /etc/passwd   显示可以登录的用户名
+$ awk -F':' 'NR>=5 && NR<=10 {print $0}' /etc/passwd  显示5-10行
+$ awk '/^root/,/^uucp/ {print $0}' /etc/passwd    匹配以root开头至uucp开头当前所在行
+awk 'NR==2,/^uucp/ {print $0}' /etc/passwd   指定从第二行开始匹配以uucp开头，打印所有行
+awk 'NR==10 , NR==20 {print $0}' /etc/passwd    打印10到20行所有内容 （等同于 awk -F':' 'NR>=10 && NR<=20 {print $0}' /etc/passwd）
+awk 'NR==10 || NR==20 {print $0}' /etc/passwd   打印第10行或者第20行的所有内容
+
+
+
+3）逻辑表达式
+	例如：NR>40
+	例如：if ( $2>50)  { print $3 } 
+	逻辑表达式：
+			==（等于）、！=（不等于）、>（大于）、<（小于）、>=（大于等于）、<=（小于等 于）
+			~（匹配于）和！~（不匹配于）
+			!(非)、&&（与）、||（或）、和括号（）
+
+awk -F: 'NR<10 && NR>3 {print $0} ' /etc/passwd				－－与
+awk -F: 'NR==10 || NR==3 {print NR,$0} ' /etc/passwd			－－或
+awk -F: '!(NR<40) {print NR,$1}' /etc/passwd					－－取反
+awk -F: '$3>=500 && $3 <=60000 {print $3,$1}' /etc/passwd		－－打印普通用户
+awk -F: '!($3>500 && $3<60000) {print $1}' /etc/passwd               ---打印系统用户
+
+awk -F: 'NR%2==0 {print NR,$0}' /etc/passwd				－－ 取偶数
+awk -F: 'NR%2!=0 {print NR,$0} ' /etc/passwd					－－打印奇数行
+awk -F: 'NR%2==1 {print NR,$0}' /etc/passwd
+awk -F":" 'BEGIN {print "user_UID\tusername\t"RS"-------------------"}  ($3>=500 && $3<=60000) {print $3"\t","\t"$1}  END {print "--------------------"}' /etc/passwd
+
+awk的流程控制 
+ if
+ for
+ while
+
+if(expr1) action
+if(expr1)action1;else aciton2
+if(expr1) action1;else if(expr2);else
+
+# awk -F: '{if($3>500) print $1,$3,"普通用户"}' /etc/passwd
+# awk -F: '{if($3>500) print $1,$3,"普通用户";else print $1,$3,"不是普通用户"}' /etc/passwd
+# awk -F: '{if($3==0) print $1,$3,"管理员";else if($3<500) print $1,$3,"系统用户";else print $1,$3,"普通用户"}' /etc/passwd
+
+for
+# awk 'BEGIN {for(i=0; i<=10; i++) print i}'
+# awk 'BEGIN {for(i=1;i<=10;i=i+2) print i}'
+
+
+
+while
+# awk 'BEGIN {i=0;while(i<=5) {print i;i++}}'
+# awk 'BEGIN {i=0;while(i<=5) {print"service",i,"start";i++}}'
+
+awk -F ":" '$1~/root/{i=1;while(i < NF){print i,$i;i++}}' passwd
+
+
+
+#循环的控制：
+break		--条件满足的时候中断循环
+continue		--条件满足的时候跳过循环
+# awk 'BEGIN {i=0;while(i<=5) {i++;if(i==3) continue; print i}}'
+# awk 'BEGIN {i=0;while(i<=5) {i++;if(i==3) break; print i}}
+
+
+ 
+
+----------------备份脚本+锁--------------
+锁是一种机制，是程序与程序之间协同工作的一种机制。
+ 
+运行脚本程序会遇到以下问题:
+ 
+1、早上你打开电脑运行了一个时间比较长的脚本，突然被老板叫了过去，等你回来你缺忘了是否运行过此脚本怎么办？
+2、有一天你正在运行某一个脚本,服务器突然宕机,但是你又想知道脚本是否运行完成.
+
+
+如果思路如下:
+ 
+运行脚本前，判断锁文件是否存在，
+  如果存在，说明此脚本可能正在运行也有可能是脚本被意外中断，
+            然后通过判断运行的脚本PID和之前运行的PID是否一致，
+             如果一致，说明脚本正在运行，
+             如果不一致说明脚本是被意外中断，会重新运行此脚本。
+
+
+
+ for循环打包与压缩数据，进程锁判断是否备份完成
+
+---脚本名称
+if_lock_for_webdata.sh
+
+
+
++++++++++++++++++++++++++++安装脚本+++++++++++++++++++++++
+xinetd(telnet|tftp)
+nfs
+dhcp
+samba(share|user)
+vsftpd(虚拟主机|虚拟用户)
+dns(正向域与反向域)
+web(apache)
+mail(postfix(MTA)+dovecot(MUA)+squirrelmail+php+apache)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+--------------------测试脚本-----------------------------
+
+--------------------监控脚本-----------------------------
+                       |报警(短信|飞信|邮件)
+
+
+如何打标签 \( \)    
+             \1
+
+[root@node2 ~]# echo abc |sed 's/\(a\)\(b\)\(c\)/\3\2\1/' |tr a-z A-Z
+CBA
+
+---查看
+
+
+# Print a text banner.
+echo -en $"\t\tWelcome to "
+read -r system_release < /etc/system-release
+if [[ "$system_release" == *"Red Hat"* ]]; then
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;31m"
+ echo -en "Red Hat"
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;39m"
+ PRODUCT=$(sed "s/Red Hat \(.*\) release.*/\1/" /etc/system-release)
+ echo " $PRODUCT"
+elif [[ "$system_release" == *Fedora* ]]; then
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;34m"
+ echo -en "Fedora"
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;39m"
+ PRODUCT=$(sed "s/Fedora \(.*\) \?release.*/\1/" /etc/system-release)
+ echo " $PRODUCT"
+else
+ PRODUCT=$(sed "s/ release.*//g" /etc/system-release)
+ echo "$PRODUCT"
+fi
+
+
+练习:
+1>
+  安装vsftpd的虚拟主机
+对
+ 扩展FTP的功能
+a:	mkdir /home/ftpsite/a    下载限速250KBps
+b:	mkdir /home/ftpsite/b    上传限速200KBps
+c:	/home/ftpsite/           超级VIP 不限速
+abc     默认官方参数
+2>
+  尽量使用sed  配置DNS 正向域 uplooking.gz   -----A  station{1..254}.uplooking.gz
+	               反向域 192.168.0.     -----PTR {254..1}.0.168.192   
+
+
+

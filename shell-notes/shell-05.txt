@@ -1,0 +1,455 @@
+﻿awk的概述：
+awk是一种编程语言，主要用于在linux/unix下对文本和数据进行处理，是linux/unix下的一个工具。数据可以来自标准输入、一个或多个文件，或其它命令的输出。awk的处理文本和数据的方式：逐行扫描文件，默认从第一行到最后一行，寻找匹配的特定模式的行，并在这些行上进行你想要的操作。gawk是awk的GNU版本，它提供了Bell实验室和GNU的一些扩展。下面介绍的awk是以GNU的gawk为例的，在linux系统中已把awk链接到gawk，所以下面全部以awk进行介绍。
+
+
+awk命令两种使用方式：
+1）命令模式
+awk [options] 'commands' file(s)
+	option 部分
+		-F 定义字段分割符号
+		-v 定义变量并赋值
+		-f 指定awk的脚本
+	command 部分：
+		1、范围说明或者正则表达式或者{awk命令语句1；awk命令语句2；}
+		2、范围说明部分可以是BEGIN、END、逻辑表达式或者为空
+		3、awk命令语句间用分号间隔
+		4、引用shell 变量需用双引号引起
+					
+2）脚本模式
+		awk [options] -f scriptfile file(s)
+		特点：
+		1、awk脚本是awk命令的清单
+		2、命令需要用分号间隔
+		3、#号开头的是注释行
+		4、#！/usr/bin/awk -f 
+
+
+字段分割及相关变量：
+	$1,$2,$3...$n：awk中用该顺序形式表示files中每行以间隔符号分割的各列的不同字段
+	$0表示文本本身
+	注：
+	awk默认以空格符为间隔符号将每行分割为单独的字段，也可以使用awk内置变量FS定义间隔符号
+	
+	NF  表示当前记录的字段数（列数）
+	$NF	最后一列
+	$(NF-1)	倒数第二列
+	FNR/NR	行号
+	FILENAME 文件名
+	"\t"	制表符
+	RS	换行符  \n
+	""	打印字符串
+	FS 定义间隔符
+   	print 函数
+
+awk -F: '{print "第"NR"行"RS$1,$3,$(NF-1),$NF}' passwd
+
+1、打印如下内容
+*****用户名：root*****
+*****UID是:0*********
+*****SHELL是：/bin/bash*****
+
+awk -F: '{print "******用户名："$1"*******"RS"****UID是："$3"*******"RS"*****SHELL是："$NF"******"}'
+
+定义变量：
+# awk -v NUM=3 -F: '{ print $NUM }' /etc/passwd
+
+注意：awk语句中调用变量不需要加$
+
+定址:
+	1）关键字
+		BEGIN：表示在程序开始前执行
+		END ：表示所有文件处理完后执行
+		BEGIN和END之间；分号隔开
+
+*******************
+uname	home	shell
+
+awk 'BEGIN{FS=":"};{print "***************"RS"UNAME\tHOME\tSHELL"RS$1"\t"$(NF-1)"\t"$NF}' 
+
+awk 'BEGIN{FS=":"; print "***************\nUNAME\tHOME\tSHELL"}{print $1"\t"$(NF-1)"\t"$NF}' passwd 
+
+# cat 1.txt 
+1
+2
+3
+4
+5
+
+awk -v sum=0 '{sum+=$1};END{print "1到5的和是："sum}' 1.txt 
+
+for ((i=1;i<=5;i++));do echo $i;done|awk '{sum+=$1};END{print sum}'
+
+
+
+示例：
+打印最后一行和倒数第二行（登录shell和家目录）
+# awk 'BEGIN {FS=":"} {print $NF, $(NF-1)}' /etc/passwd|head -5
+打印/etc/passwd里的用户名、家目录及登录shell
+u_name      h_dir       shell
+***************************
+
+***************************
+
+
+
+计算1~10的和
+# for ((i=1;i<=10;i++));do echo $i;done|awk '{i+=$1};END{print i}'
+打印1-10的奇数和
+# for ((i=1;i<=10;i+=2));do echo $i;done|awk '{i+=$1};END{print i}'
+
+
+
+
+正则表达式
+逻辑表达式：
+==（等于）、！=（不等于）、>（大于）、<（小于）、>=（大于等于）、<=（小于等 于）
+~（匹配于）和！~（不匹配于）
+!(非)、&&（与）、||（或）
+
+			
+
+# awk '/root/{print $1}' passwd      	使用普通字符定位
+# awk '$0 ~ /^root/ {print $1}'  passwd		使用正则表达式定位
+
+1061  sed -n '1,5p' passwd 
+ 1062  awk 'NR==1,NR==5{print $0}' passwd 
+ 1063  awk 'NR>=1&&NR<=5{print $0}' passwd 
+ 1064  awk 'NR==5,NR==10{print $0}' passwd 
+ 1065  sed -n '/^sync/,/^ftp/p' passwd 
+ 1066  awk '/^sync/,/^ftp/{print $0}' passwd 
+ 1067  sed -n '10,/^ftp/p' passwd 
+ 1068  awk 'NR==10,/^ftp/{print $0}' passwd 
+ 1069  sed -n '/^root/,10p' passwd 
+ 1070  awk '/^root/,NR==10{print $0}' passwd 
+ 1071  sed -n '/bash$/p' passwd 
+ 1072  awk '/bash$/{print $0}' passwd 
+ 1073  awk '$NF~bash{print $0}' passwd 
+ 1074  awk -F: '$NF~bash{print $0}' passwd 
+ 1075  awk -F: '$NF~bash${print $0}' passwd 
+ 1076  awk -F: '/$NF~bash$/{print $0}' passwd 
+ 1077  awk -F: '$NF~/bash$/{print $0}' passwd 
+ 1078  awk -F: '$0~/bash$/{print $0}' passwd 
+ 1079  awk -F: '$0~/bash$/{print $7}' passwd 
+
+
+
+
+--从第一行开始匹配到以lp开头行
+awk -F: 'NR==1,/^lp/{print $0 }' passwd  
+--从第一行到第5行          
+awk -F: 'NR==1,NR==5{print $0 }' passwd
+--从以lp开头的行匹配到第10行       
+awk -F: '/^lp/,NR==10 {print $0 }' passwd 
+--从以root开头的行匹配到以lp开头的行       
+awk -F: '/^root/,/^lp/{print $0}' passwd
+ 打印以root开头或者以lp开头的行            
+awk -F: '/^root/ || /^lp/{print $0}' passwd  
+ 显示5-10行   
+awk -F':' 'NR>=5 && NR<=10 {print $0}' /etc/passwd     
+awk -F: 'NR<10 && NR>5 {print $0}' passwd 
+
+打印IP地址
+ifconfig eth1|awk 'NR==2{print $0}'|awk -F: '{print $2}'|awk '{print $1}'
+ifconfig eth1|awk 'NR==2{print $0}'|awk '{print $2}'|awk -F: '{print $2}'
+ifconfig eth1|awk '/Bcast/{print $0}'|awk -F'[ :]+' '{print $4}'
+ifconfig eth1|awk -F'[ :]+' '/Bcast/{print $4}'
+
+
+课堂练习：
+1、显示可以登录操作系统的用户所有信息     //从第7列匹配以bash结尾，输出整行（当前行所有的列）
+awk -F: '$0 ~ /bash$/{print $0}'
+awk -F: '$NF ~ /bash$/{print $0}'
+awk -F: '$7 ~ /bash/{print $0}'
+awk '/bash$/{print $0}'
+
+2、显示可以登录系统的用户名
+awk '/bash$/{print $1}'
+3、打印出系统中普通用户的UID和用户名如下显示：
+awk -F: 'BEGIN{print "UID\tUSERNAME\n*********begin*********"}($3>=500 && $3!=65534){print $3"\t"$1};END{print "**********end**********"}'
+
+
+awk -F: 'BEGIN{print "UID\tUSERNAME\n*********begin*********"}($3>=1000 && $3<=60000){print $3"\t"$1};END{print "**********end**********"}'
+
+UID	 USERNAME
+*******begin*******
+500	user1
+501	user2
+511	u10
+521	mial01
+522	mail01
+523	mail02
+524	zhangsan
+525	lisi
+526	wanger
+*******end********
+
+4、以数字开头
+ awk '/^[0-9]/{print $0}' passwd    
+5、以任意大小写字母开头
+awk '/^[a-Z]/{print $0}' passwd
+awk '/^[^0-9]/{print $0}' passwd
+
+
+
+if语句：
+格式
+{if(表达式)｛语句;语句；...｝}
+if [ xxx ];then
+xxx
+fi
+
+awk -F: '{if($3==0) {print $1"是管理"}}' 
+awk -F: '{if($3>=500 && $3<=60000) {print $1"\t是普通用户"}}' passwd 
+
+
+
+
+awk -F: '{if($3==0) {print $1 " is administrator."}}' /etc/passwd
+awk -F: '{if($3>0 && $3<1000){count++;}}  END{print count}' /etc/passwd	　　//统计系统用户数
+
+
+
+
+if...else语句:
+格式
+{if(表达式)｛语句;语句;...｝else｛语句;语句;...}}
+
+if [xxx];then
+xxxx
+else
+xxxx
+fi
+
+awk -F: '{if($3==0) {print $1":\t是管理员"} else {print $1":\t不是管理员"}}'
+awk -F: '{if($3>=1 && $3<500 || $3==65534) {count++}};END{print "系统管理员的个数是："count}' passwd
+
+awk -F: '{if($3>=500 && $3 <60000) {i++} else {j++}};END{print "普通用户的个数为："i RS"非普通用户的个数为："j}' passwd
+
+
+
+awk -F: '{if($3==0){print $1} else {print $7}}' /etc/passwd
+awk -F: '{if($3==0) {count++} else{i++} }' /etc/passwd
+awk -F: '{if($3==0){count++} else{i++}} END{print "管理员个数: "count ; print "系统用户数: "i}' /etc/passwd
+
+
+
+if...else if...else语句：
+
+if [xxx];then
+xxx
+elif [xxx];then
+xxx
+else
+xxx
+fi
+
+
+
+格式
+{if(表达式1)｛语句;语句；...｝else if(表达式2)｛语句;语句；...｝else if(表达式3)｛语句;语句；...｝else｛语句;语句；...｝}
+
+awk -F: '{if($3==0) {i++} else if($3>=1 && $3<=499 || $3==65534) {j++} else {k++}};END{print "管理员的个数为：" i RS "系统用户的个数为：" j RS "普通用户的个数为：" k}' passwd
+
+
+awk -F: '{if($3==0){i++} else if($3>999){k++} else{j++}} END{print i; print k; print j}' /etc/passwd
+awk -F: '{if($3==0){i++} else if($3>999){k++} else{j++}} END{print "管理员个数: "i; print "普通用个数: "k; print "系统用户: "j}' /etc/passwd 
+
+
+
+循环
+while:
+i=1;while [ $i -le 5 ];do echo $i;let i++;done
+i=1;while (( $i <= 5 ));do echo $i;let i++;done
+
+awk 'BEGIN{i=1;while(i<=5){print i;i++}}'
+ 1132  awk 'BEGIN{i=1;while(i<=5){print i;i++}}'
+ 1133  awk 'BEGIN{i=1;while(i<=10){print i;i+=2}}'
+ 1134  awk 'BEGIN{i=1;while(i<=5){print i;i++}}'|awk '{sum+=$1};END{print sum}'
+
+# awk 'BEGIN{i=1; while(i<=10){print i; i++}  }'
+# awk -F: '{i=1; while(i<=7){print $i; i++}}' passwd
+# awk -F: '{i=1; while(i<=10) {print $0;  i++}}' /etc/passwd		 //将每行打印10次
+
+for:
+
+# awk 'BEGIN{for(i=1;i<=5;i++){print i} }'                                //C风格for
+1
+2
+3
+4
+5
+# awk -F: '{for(i=1;i<=10;i++) print $0}' /etc/passwd			     //将每行打印10次
+
+
+for
+打印1~5
+# awk 'BEGIN{for(i=1;i<=5;i++) print i}'
+1
+2
+3
+4
+5
+打印1~10中的奇数
+# awk 'BEGIN{for(i=1;i<=10;i=i+2) print i}'
+1
+3
+5
+7
+9
+
+while
+打印1~5
+# awk 'BEGIN {i=1;while(i<=5) {print i;i++}}'
+打印1~10中的奇数
+# awk 'BEGIN {i=1;while(i<=10) {print i;i+=2}}'
+1
+3
+5
+7
+9
+
+循环的控制：
+break		--条件满足的时候中断循环
+continue		--条件满足的时候跳过循环
+# awk 'BEGIN {i=0;while(i<=4) {i++;if(i==3) continue;print i}}'
+1
+2
+4
+5
+6
+# awk 'BEGIN{for(i=1;i<=5;i++) {if(i==3) continue;print i } }'
+1
+2
+4
+5
+# awk 'BEGIN {i=0;while(i<=5) {i++;if(i==3) break;print i}}'
+1
+2
+
+
+算术运算：+ - * / %(模) ^(幂2^3)
+可以在模式中执行计算，awk都将按浮点数方式执行算术运算
+ 1400  awk 'BEGIN{print 1+1}'
+ 1401  awk 'BEGIN{print 1**1}'
+ 1402  awk 'BEGIN{print 2**3}'
+ 1403  awk 'BEGIN{print 2/3}'
+
+
+expect   自动应答		TCL(Tool Command Language)语言
+
+yum install expect -y
+
+# rpm -qi expect
+Summary     : A program-script interaction and testing utility
+Description :
+Expect is a tcl application for automating and testing
+interactive applications such as telnet, ftp, passwd, fsck,
+rlogin, tip, etc. Expect makes it easy for a script to
+control another program and interact with it.
+
+This package contains expect and some scripts that use it.
+
+
+任何有交互性的操作，都可以用expect来做
+
+1. expect 是基于tcl 演变而来的，所以很多语法和tcl 类似，基本的语法如下
+#!/usr/bin/expect			首行加上/usr/bin/expect
+spawn shell command		spawn: 后面加上需要执行的shell 命令，打开一个进程
+expect "xxx"		expect: 只有spawn 执行的命令结果才会被expect 捕捉到，因为spawn 会启动一个进程，只有这个进程的相关信息才会被捕捉到
+send "xxxx"		send 会将expect 脚本中需要的信息发送给spawn 启动的那个进程
+expect "xxx"
+send "xxx"
+expect eof
+
+执行：
+./xxx.sh
+
+
+demo1：使用expect修改用户密码
+#!/usr/bin/expect
+#set name "user1"
+#set name [ exec shell command ]
+spawn passwd user1
+expect "password:"
+send "123\n"
+expect "password:"
+send "123\n"
+expect eof
+
+
+#!/bin/bash
+expect <<EOF &> /dev/null
+spawn passwd $1		产生passwd $1这个命令
+expect "password:"		当停在password:结尾这个标识符时
+send "123\r"			就把123传给它
+expect "password:"		当再次停在password:结尾这个标识符时
+send "123\r"			就再次把123传给它
+expect eof			表示expect结束
+EOF
+
+bash 1.expect test    	执行方法，因为脚本里写的是$1，所以后面接你要修改密码的用户名
+
+
+demo2：使用expect下载同步ftp共享的文件 
+
+#!/bin/bash
+
+expect <<EOF &> /dev/null
+spawn lftp 10.1.1.254
+expect ":~>"
+send "get pub/hosts\n"
+send "quit\n"
+expect eof
+EOF
+
+
+demo3：使用expect实现ssh传密码
+
+#!/bin/bash
+sed -i '/^'$1'/d' /root/.ssh/known_hosts
+expect << EOF > /dev/null 2>&1
+spawn ssh $1
+expect "no)?"
+send "yes\r"
+expect "password:"
+send "123456\r"
+expect "# "
+send "touch /root/Desktop/123\n"
+send "exit\n"
+expect eof
+EOF
+
+说明：关于上面跳过yes的问题，可以加下面的参数来做
+ssh 10.1.1.2 -o StrictHostKeyChecking=no
+
+#!/usr/bin/expect
+set ip [exec ifconfig eth0 | awk "-F\[ :\]+" "/inet addr/{print \$4}"]
+spawn ssh -l stu1 $ip
+expect "password:"
+send "123\n"
+expect eof
+exit
+
+
+课堂练习：
+对多台机器的远程expect操作，假设管理的机器有N台，密码也各不相同（没有ssh等效性)，现在需要在所有机器上都创建一个文件为/tmp/zhangsan的文件
+
+# cat ip_user_passwd.list		这个文件里包含你所有管理机器的IP，用户及其对应的密码
+10.1.1.11       root    123
+10.1.1.22       root    111
+10.1.1.33       root    123456
+10.1.1.44       root    54321
+......
+
+作业1：
+1、写一个自动检测磁盘使用率的脚本，当磁盘使用空间达到90%以上时，需要发送邮件给相关人员
+2、写一个脚本监控系统内存和交换分区使用情况
+
+
+作业2：
+输入一个IP地址，使用脚本判断其合法性：
+必须符合ip地址规范，第1、4位不能以0开头，不能大于255不能小于0
+
+
+
+

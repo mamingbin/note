@@ -1,0 +1,310 @@
+vi vim nano emacs  交互
+
+sed   <行编辑器>流编辑器
+      1、通过非交互式来修改文本中的内容.默认情况下,不会直接修改原文件，而是所有的输出行都被打印到屏幕。逐行处理文件,并将结果发送到屏幕。
+      2、sed 用来把文档或字符串里面的文字经过一系列编辑命令转换为另一种格式输出。
+      3、sed 通常用来匹配一个或多个正则表达式的文本进行处理
+      
+具体过程如下：
+            首先sed把当前正在处理的行保存在一个临时缓存区中（也称为模式空间），然后处理临时缓冲区中的行，完成后把该行发送到屏幕上。
+            sed每处理完一行就将其从临时缓冲区删除，然后将下一行读入，进行处理和显示。处理完输入文件的最后一行后，sed便结束运行。
+            sed把每一行都存在临时缓冲区中，对这个副本进行编辑，所以不会修改原文件。
+
+sed常见的语法模式有两种，一种叫命令行模式，另一种叫脚本模式。
+
+命令行模式：
+格式 
+  sed -option  'commands[地址定位]' filename
+  说明：引用shell script中的变量应使用双引号，而非通常使用的单引号
+option：
+-e	进行多项编辑，即对输入行应用多条sed命令时使用
+-n	取消默认的输出  （sed的默认输出是将文件里的内容全部输出，然后再将匹配到的内容打印一次出来）
+
+[root@lnxclt2 shell04]# sed '/root/p' passwd 
+root:x:0:0:root:/root:/bin/bash
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+halt:x:7:0:halt:/sbin:/sbin/halt
+mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
+operator:x:11:0:operator:/root:/sbin/nologin
+operator:x:11:0:operator:/root:/sbin/nologin   ---输出所有内容，包含root的行打印了两次
+
+[root@lnxclt2 shell04]# sed -n '/root/p' passwd 
+root:x:0:0:root:/root:/bin/bash
+operator:x:11:0:operator:/root:/sbin/nologin   ---只打印包含root的行
+
+sed 匹配关键字时，必须用//把关键字包含起来
+如：sed -n '/root/p' passwd   ---搜索passwd文件里包含root的行 --p 表示打印出匹配到的内容，通常与-n搭配使用
+
+-f	指定sed脚本的文件名
+-r      使用扩展正则表达式
+-i      重定向输出<修改源文件>
+
+
+
+命令：
+a\	在当前行后添加一行或多行。多行时除最后一行外，每行末尾需用“\”续行
+i\	在当前行之前插入文本。多行时除最后一行外，每行末尾需用"\"续行
+c\	用此符号后的新文本替换当前行中的文本（替换掉的是整行内容，用该参数无法替换该行的部分内容，只能替换整行），多行时除最后一行外，每行末尾需用"\"续行
+[root@lnxclt2 shell04]# sed '/root/c888' passwd   ---将包含root的整行内容都替换成了888
+888
+bin:x:1:1:bin:/bin:/sbin/nologin
+
+[root@lnxclt2 shell04]# sed '1ihello' passwd   ---在第一行前插入一行hello
+hello
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+
+[root@lnxclt2 shell04]# sed 'ihello' passwd   ---没有指定在哪行前面插入时，每一行前面都会插入一行hello
+hello
+root:x:0:0:root:/root:/bin/bash
+hello
+bin:x:1:1:bin:/bin:/sbin/nologin
+hello
+
+[root@lnxclt2 shell04]# sed '2i\hello world' passwd  
+root:x:0:0:root:/root:/bin/bash
+hello world
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+
+[root@lnxclt2 shell04]# sed '2i\
+> hello\
+> world' passwd
+root:x:0:0:root:/root:/bin/bash
+hello
+world
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+
+[root@lnxclt2 shell04]# sed '2ih\
+> ello\
+>  world' passwd
+root:x:0:0:root:/root:/bin/bash
+h
+ello
+ world
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+
+[root@lnxclt2 shell04]# sed '2ihello\world' passwd 
+root:x:0:0:root:/root:/bin/bash
+helloworld
+bin:x:1:1:bin:/bin:/sbin/nologin 
+
+  sed '5a99999' 11.txt 
+  sed '5a99999\n4444\n5555' 11.txt 
+  sed '5a99999\
+8888\
+0000' 11.txt
+  sed 'ahello' 11.txt 
+  sed '$ahello' 11.txt 
+
+
+
+
+d	删除行
+p	打印行
+
+sed '1d' passwd   ---删除第1行
+[root@lnxclt2 shell04]# sed '1d' passwd （内容已经被删掉了，所以无法再打印，因此不取消默认输出）
+bin:x:1:1:bin:/bin:/sbin/nologin   ---第1行内容已经被删掉，这是第2行
+
+sed -n '1p' passwd   ---打印第1行
+sed -n '$p' passwd   ---打印最后一行
+sed -n '1,5p' passwd   ---打印第1行到第5行
+
+s	用一个字符串替换另一个  
+g	在行内进行全局替换
+c       交换式替换
+
+r	从文件中读取输入行   '/^root/r'
+w	将所选的行写入文件   sed '/^root/w /tmp/abc.txt'  passwd  ---将以root开头的行写入到abc.txt中
+
+!	对所选行以外的所有行应用命令   sed -n '1,5!p' 11.txt 
+y	将字符替换为另一字符（不能对正则表达式使用y命令） tr
+
+[root@lnxclt2 shell04]# sed 'y/root/ROOT/' passwd   ------用y替换，替换的内容要与被替换的内容长度一致
+ROOT:x:0:0:ROOT:/ROOT:/bin/bash
+[root@lnxclt2 shell04]# sed 'y/root/ROOT123/' passwd   ---长度不一致会报错
+sed: -e expression #1, char 15: strings for `y' command are different lengths
+
+
+&   保存查找串以便在替换串中引用 \(\) \1 \2..\9
+=   打印行号
+
+ 1140  sed -n 's/home/rhome/p' 11.txt 
+ 1141  sed -n 's/home/rhome/gp' 11.txt 
+ 1143  sed -n 's//sbin/nologin/uplooking/gp' 11.txt 
+ 1144  sed -n 's/\/sbin\/nologin/uplooking/gp' 11.txt 
+ 1145  sed -n 's#/sbin/nologin#uplooking#gp' 11./txt 
+ 1146  sed -n 's#/sbin/nologin#uplooking#gp' 11.txt 
+ 1147  sed -n '1,5s#/sbin/nologin#uplooking#gp' 11.txt 
+
+
+定址：
+        定址用于决定对哪些行进行编辑。地址的形式可以是数字、正则表达式、或二者的结合。如果没有指定地址，sed将处理输入文件的所有行。
+
+x   指定x行号
+x,y 指定x到y行号
+/key/ 查询包含关键字的行
+/key1/,/key2/   匹配包含两个关键字之间的行
+/key/,x  从匹配关键字的行开始到文件第x行之间的行（包含关键字所在行）
+x,/key/  从第x行开始到与关键字的匹配行之间的行
+x,y! 不包含x到y行
+
+ 1193  sed -n '/^adm/,/^ntp/p' 11.txt 
+ 1194  grep -E 'adm|ntp' 11.txt 
+ 1195  sed -nr '/adm|ntp/p' 11.txt 
+ 1196  sed -n '/adm/;/ntp/p' 11.txt 
+ 1197  sed -n '/adm/p;/ntp/p' 11.txt 
+ 1198  sed -ne '/adm/p'  -ne '/ntp/p' 11.txt 
+
+
+注意：sed使用的正则表达式是括在斜杠线"/"之间的模式。
+
+
+ y命令
+该命令与UNIX/Linux中的tr命令类似，字符按照一对一的方式从左到右进行转换。
+正则表达式元字符对y命令不起作用。与s命令的分隔符一样，斜线可以被替换成其它的字符。
+# sed '39,41y/stu/STU/' /etc/passwd
+# sed '39,41y/stu\:x/STU@%/' /etc/passwd
+
+-e 选项 多项编辑
+-e是编辑命令，用于sed执行多个编辑任务的情况下。在下一行开始编辑前，所有的编辑动作将应用到模式缓冲区中的行上。
+
+-i 选项  直接修改原文件
+
+& 符号 保留查找字符串
+# sed -n 's/^root/#&/p' passwd   注释掉以root开头的行
+# sed -r 's/^root|^stu/#&/' passwd  注释掉以root开头或者以stu开头的行
+# sed -n -r 's/^root|^stu/#&/p' /etc/passwd
+# sed -n '1,5s/^[a-z].*/#&/p' passwd  注释掉1~5行中以任意小写字母开头的行
+# sed -n '1,5s/^/#/p' /etc/passwd  注释1~5行
+或者
+sed -n '1,5s/^/#/p' passwd 以空开头的加上#
+sed -n '1,5s/^#//p' passwd 以#开头的替换成空
+vim ——>ctrl+v——>I(行头插入)——>ESC
+
+= 打印行号
+# sed -n '/bash$/=' passwd    打印以bash结尾的行的行号
+
+# sed -ne '/root/=' -ne '/root/p' passwd 
+1
+root:x:0:0:root:/root:/bin/bash
+11
+operator:x:11:0:operator:/root:/sbin/nologin
+
+
+脚本模式 ：       
+用法：sed -f file1.sed  file
+       建议使用   ./sed.sh 
+       脚本的第一行写上
+       #!/bin/sed -f
+       
+脚本模式下需要注意以下几点。
+１）　脚本文件是一个sed的命令行清单。
+２）　在每行的末尾不能有任何空格、制表符（tab）或其它文本。
+３）　如果在一行中有多个命令，应该用分号分隔。
+４）　不需要且不可用引号保护命令
+５）　#号开头的行为注释
+
+# cat passwd
+stu3:x:509:512::/home/user3:/bin/bash
+stu4:x:510:513::/home/user4:/bin/bash
+stu5:x:511:514::/home/user5:/bin/bash
+
+# cat sed.sh 
+#!/bin/sed -f
+2a\
+******************
+2,$s/stu/user/
+$a\
+we inster new line
+s/^[a-z].*/#&/
+
+sed和正则表达式综合运用总结：
+1、正则表达式必须以”/“前后规范间隔
+			例如：sed '/root/d' file
+			例如：sed '/^root/d' file
+2、如果匹配的是扩展正则表达式，需要使用-r选来扩展sed
+   注意：         
+在正则表达式中如果出现特殊字符(^$.*/[]),需要以前导 ”\“ 号做转义
+eg：sed '/\$foo/p' file
+3、逗号分隔符
+		例如：sed '5,7d' file  删除5到7行
+		例如：sed '/root/,/ftp/d' file	
+        删除第一个匹配字符串"root"到第一个匹配字符串"ftp"的所有行本行不找 循环执行
+       
+4、组合方式
+		例如：sed '1,/foo/d' file				    删除第一行到第一个匹配字符串"foo"的所有行
+		例如：sed '/foo/,+4d' file				删除从匹配字符串”foo“开始到其后四行为止的行
+		例如：sed '/foo/,~3d' file				删除从匹配字符串”foo“开始删除到3的倍数行（文件中）
+		例如：sed '1~5d' file			从第一行开始删每五行删除一行
+		例如：sed -n '/foo\|bar/p' file		显示配置字符串"foo"或"bar"的行
+		          sed -n '/foo/,/bar/p' file      显示匹配从foo到bar的行
+		   sed '1~2d'  file                           删除奇数行
+		   sed '0-2d'   file                    删除偶数行 sed '1~2!d'  file
+5、特殊情况
+		例如：sed '$d' file					--删除最后一行
+	              sed '1d' file                删除第一行
+	
+其他：
+sed 's/.//' a.txt		    删除每一行中的第一个字符
+sed 's/.//2' a.txt	        删除每一行中的第二个字符
+sed 's/.//N' a.txt    从文件中第N行开始，删除每行中第N个字符（N>2）
+sed 's/.$//' a.txt        删除每一行中的最后一个字符
+
+
+课堂练习：
+1、匹配将任意数字替换成空或者制表符
+ 1214  sed -n 's/[0-9]//gp' passwd |head
+ 1215  sed -n 's/[0-9]/\t/gp' passwd |head
+2、去掉文件1-5行中的数字、冒号、斜杠
+ 1218  sed -n '1,5s/[0-9:/]//gp' passwd 
+ 1219  sed -nr '1,5s/[0-9]|:|\///gp' passwd 
+ 1220  sed -nr '1,5s/([0-9]|:|\/)//gp' passwd
+# sed -ne '1,5s/[0-9]//g' -ne '1,5s/[:]//g' -ne '1,5s/\///gp' passwd 
+
+3、匹配root关键字替换成hello uplooking，并保存到test.txt文件中
+1231  sed '/root/chello uplooking' passwd 
+1228  sed -n 's/root/hello uplooking/gp' passwd 
+# sed -n 's/root/hello uplooking/gp w test.txt' passwd 
+
+
+4、删除vsftpd.conf、smb.conf、main.cf配置文件里所有注释的行及空行（不要直接修改原文件）
+ 1253  sed -r '/^#|^$/d' vsftpd.conf 
+ 1254  sed  '/^#/d;/^$/d' vsftpd.conf 
+ 1255  sed -e '/^#/d' -e '/^$/d' vsftpd.conf 
+
+# sed -r '/^#|^$|^;|^\t$/d' smb.conf 
+# sed -ri '/^#|^$|^;|^\t$/d' smb.conf
+# sed '/^#/d;/^$/d;/^[[:blank:]]/d' /etc/postfix/main.cf
+
+5、使用sed命令截取自己的ip地址
+# ifconfig eth1|sed -n '2p'|sed -n 's/.*addr:\(.*\) Bcast.*/\1/p'
+6、使用sed命令一次性截取ip地址、广播地址、子网掩码  \(..\）
+# ifconfig eth1|sed -n '2p'|sed -n 's/.*addr:\(.*\) Bcast:\(.*\) Mask:\(.*\)/\1\n\2\n\3/p'
+
+# ifconfig eth1|sed -n '2p'|sed -n 's/[a-Z:]//gp'
+
+7、注释掉文件的2-3行和匹配到以root开头或者以ftp开头的行
+# sed -ne '2,3s/^/#&/p' -nre 's/^root|^ftp/#&/p' passwd
+
+8、匹配以adm到ntp开头的行并且注释掉
+# sed -n '/^adm/,/^ftp/p' passwd |sed -n 's/^/#&/p'
+
+# sed -n '/^adm/,/^ftp/w 1.txt' passwd && sed -n 's/^/#&/p' 1.txt
+
+
+作业：
+1、写一个初始化系统的脚本
+1）自动修改主机名（如：ip是192.168.0.88，则主机名改为server88.uplook.com）
+2）自动配置可用的yum源
+3）自动关闭防火墙和selinux
+2、写一个搭建ftp服务的脚本，要求如下：
+1）不支持本地用户登录
+2） 匿名用户可以上传 新建 删除
+3） 匿名用户限速500KBps
+
+

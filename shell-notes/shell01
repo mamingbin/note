@@ -1,0 +1,678 @@
+修改用户支持的shell
+
+vim /etc/shells
+/bin/sh
+/bin/bash
+/sbin/nologin
+/usr/bin/sh
+/usr/bin/bash
+/usr/sbin/nologin
+/bin/tcsh
+/bin/csh
+修改：
+usermod -s /bin/tcsh test1
+交互式修改：
+chsh test1
+Changing shell for test1.
+New shell [/bin/tcsh]: /bin/bash
+Shell changed.
+
+• 内部命令和外部命令
+• Shell不需要启动一个单独的进程来运行内部命令
+• Shell需要创建（fork）和执行（exec）一个新的子进程来运行外部命令
+• 尽量使用内部命令有助于性能的提升
+
+
+# type cd	history pwd  help	－－内部命令
+cd is a shell builtin
+
+内部命令 type history cd help alias pwd time exit： 
+
+
+# type ls		－－外部命令
+ls is aliased to `ls --color=tty'
+
+连续：
+[root@rhel7 ~]# ls /dev/vda[1-5]
+/dev/vda1  /dev/vda2  /dev/vda3
+[root@rhel7 ~]# ls /dev/tty{1..10}
+/dev/tty1   /dev/tty2  /dev/tty4  /dev/tty6  /dev/tty8
+/dev/tty10  /dev/tty3  /dev/tty5  /dev/tty7  /dev/tty
+
+或者关系：
+[root@rhel7 ~]# ls /dev/tty{1,10}
+/dev/tty1  /dev/tty10
+[root@rhel7 ~]# ls /dev/tty[12345]
+/dev/tty1  /dev/tty2  /dev/tty3  /dev/tty4  /dev/tty5
+非关系：
+[root@rhel7 ~]# ls /dev/tty[^12345]
+/dev/tty0  /dev/tty6  /dev/tty7  /dev/tty8  /dev/tty9
+
+[root@rhel7 ~]# ls /dev/tty[!12345]
+/dev/tty0  /dev/tty6  /dev/tty7  /dev/tty8  /dev/tty9
+
+
+转义
+# touch test\*\?\[\].sh  
+
+跳脱字符
+# ls \   ----续行符
+> /root\
+> a\
+> /b
+
+
+bash 特殊符号：
+''	---单引号 视为一个整体，但是不解析特殊含义
+""	---双引号 视为一个整体，解析特殊含义
+``	---优先执行
+$()	---同上
+$(())	---运算
+$[]	---运算
+expr	---运算
+;	---可对一行命令进行分割，在执行过程中不考虑上一个命令执行是否是正确的
+&&	---可对一行命令进行分割,在执行中需要前一条命令执行成功，再执行下一条命令
+||	---或关系，前面执行不成功，再执行后一条
+！	---命令历史
+!!	---最后一条命令
+!$	---最后一条命令的参数
+
+
+大写 [[:upper:]]  [A－Z]
+小写 [[:lower:]]  [a-z]
+字母 [[:alpha:]] [a-Z]	
+字母数字 [[:alnum:]]
+空格或者制表符 [[:blank:]]
+纯数字 [[:digit:]] [0-9]
+标点符号 [[:punct:]]
+[root@rhel7 ~]# echo $(((1+1)*10))
+20
+
+[root@rhel7 ~]# echo today is `date +%F`
+today is 2002-01-07
+[root@rhel7 ~]# echo today is $(date +%F)
+today is 2002-01-07
+
+
+用户登陆之后读取环境变量顺序
+[kiosk@foundation0 Desktop]$ ssh root@rhel7
+Last login: Sun Jan  6 23:58:30 2002 from 172.25.0.250
+this is /etc/profile
+this is $HOME/.bash_profile
+this is $HOME/.bashrc
+this is /etc/bashrc
+
+user01-->login-->bash-->/etc/profile-->$HOME/.bash_profile-->$HOME/.bashrc-->/etc/bashrc
+
+
+自定义变量：
+VARNAME=value
+[root@rhel7 ~]# ABC=123	
+ABC--变量名称
+123--对变量赋值
+[root@rhel7 ~]# echo $ABC		--调用变量
+123
+取消变量：
+[root@rhel7 ~]# unset ABC
+
+只读变量
+[root@rhel7 ~]# readonly ABC
+[root@rhel7 ~]# ABC=456		---不能修改
+-bash: ABC: readonly variable
+[root@rhel7 ~]# unset ABC	---不能删除
+-bash: unset: ABC: cannot unset: readonly variable
+
+${}	----界定变量范围
+[root@rhel7 ~]# echo ${ABC}D
+123D
+[root@rhel7 ~]# echo $ABCD
+
+[root@rhel7 ~]# echo ${ABC:1:2}D
+23D
+[root@rhel7 ~]# echo ${ABC:0:2}D
+12D
+
+set	----查看自定义变量
+[root@rhel7 ~]# set |grep ABC
+ABC=123
+
+env	----系统变量
+
+
+[root@rhel7 ~]# echo $PATH
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin
+[root@rhel7 ~]# echo $HOME
+/root
+[root@rhel7 ~]# echo $PWD
+/root
+[root@rhel7 ~]# echo $SHELL
+/bin/bash
+
+[root@rhel7 ~]# echo $PS1
+[\u@\h \W]\$
+
+定义一级命令提示符
+[root@-bash rhel712:49:53] $PS1="[\u@\s \H\T]\\$"
+
+定义二级命令提示符
+
+echo $PS2
+
+[root@-bash rhel712:50:20]#echo $PS2
+>
+
+[root@-bash rhel712:51:31]#PS2="##"	---修改二级命令提示符
+
+
+vim abc.sh
+#!/bin/bash
+
+echo "$1 is 第一个参数"
+echo "$2 is 第二个参数"
+echo "$# 命令传递参数的个数"
+echo "$* 命令行传递的所有参数"
+echo "$@ 命令行的所有参数"
+echo "$$ 进程pid"
+echo "$! 后台运行的最后一个进程号"
+echo "$0 当前进程名称"
+
+添加执行权限
+chmod +x abc.sh
+
+
+[root@rhel7 ~]# ./abc.sh 1 2 3 4 5
+1 is 第一个参数
+2 is 第二个参数
+5 命令传递参数的个数
+1 2 3 4 5 命令行传递的所有参数
+1 2 3 4 5 命令行的所有参数
+2640 进程pid
+ 后台运行的最后一个进程号
+./abc.sh 当前进程名称
+
+
+[root@rhel7 ~]# declare -i A=3
+[root@rhel7 ~]# declare -i B=7
+[root@rhel7 ~]# declare -i RESULT=$A*$B
+[root@rhel7 ~]# echo $RESULT
+21
+
+有类型变量
+	• 默认bash将变量设置为文本值，当使用算数方法时会自动将其转换为整数值
+	• 内置命令declare可以修改变量属性
+	• declare参数
+		-a 将变量看成数组
+		-f 只使用函数名
+		-F 显示未定义的函数名
+		-i 将变量看成整数
+		-r 使变量只读  
+		-x 标记变量通过环境导出
+
+
+• 数组
+	• 数组类似于保存取值的一个排列
+	      排列中每个位置称为元素
+	      每个元素通过数字下标访问
+	• 数组元素可以包含字符串或数字
+	• 数组下标从0开始
+
+[root@rhel7 test]# for i in "${A[*]}" ; do mkdir "$i" ;done
+[root@rhel7 test]# ll
+total 0
+drwxr-xr-x. 2 root root 6 Jan  7 01:41 a b c d e f
+[root@rhel7 test]# for i in "${A[@]}" ; do mkdir "$i" ;done
+[root@rhel7 test]# ll
+total 0
+drwxr-xr-x. 2 root root 6 Jan  7 01:42 a
+drwxr-xr-x. 2 root root 6 Jan  7 01:41 a b c d e f
+drwxr-xr-x. 2 root root 6 Jan  7 01:42 b
+drwxr-xr-x. 2 root root 6 Jan  7 01:42 c
+drwxr-xr-x. 2 root root 6 Jan  7 01:42 d
+drwxr-xr-x. 2 root root 6 Jan  7 01:42 e
+drwxr-xr-x. 2 root root 6 Jan  7 01:42 f
+
+
+[root@rhel7 test]# AB=([1]=a b c d [6]=7 8 9 [11]=m)
+[root@rhel7 test]# for i in {0..15} ;do echo \${AB[$i]}=${AB[i]};done
+${AB[0]}=
+${AB[1]}=a
+${AB[2]}=b
+${AB[3]}=c
+${AB[4]}=d
+${AB[5]}=
+${AB[6]}=7
+${AB[7]}=8
+${AB[8]}=9
+${AB[9]}=
+${AB[10]}=
+${AB[11]}=m
+${AB[12]}=
+${AB[13]}=
+${AB[14]}=
+${AB[15]}=
+
+
+利用 ${ } 还可针对不同的变量状态赋值(没设定、空值、非空值)：
+${file-my.file.txt} ：假如 $file 没有设定，则使用 my.file.txt 作传回值。(空值及非空值时不作处理)
+${file:-my.file.txt} ：假如 $file 没有设定或为空值，则使用 my.file.txt 作传回值。 (非空值时不作处理)
+${file+my.file.txt} ：假如 $file 设为空值或非空值，均使用 my.file.txt 作传回值。(没设定时不作处理)
+${file:+my.file.txt} ：若 $file 为非空值，则使用 my.file.txt 作传回值。 (没设定及空值时不作处理)
+${file=my.file.txt} ：若 $file 没设定，则使用 my.file.txt 作传回值，同时将 $file 赋值为 my.file.txt 。 (空值及非空值时不作处理)
+${file:=my.file.txt} ：若 $file 没设定或为空值，则使用 my.file.txt 作传回值，同时将 $file 赋值为 my.file.txt 。 (非空值时不作处理)
+${file?my.file.txt} ：若 $file 没设定，则将 my.file.txt 输出至 STDERR。 (空值及非空值时不作处理)
+${file:?my.file.txt} ：若 $file 没设定或为空值，则将 my.file.txt 输出至 STDERR。 (非空值时不作处理)
+
+当file变量为没设定值
+
+echo ${file-file.txt}	---将file.txt 作为值输出一次
+echo ${file=file.txt}	---将file.txt 作为file变量的赋值定义
+echo ${file+file.txt}	---不做处理
+
+当file为空值：
+
+[root@rhel7 test]# echo ${file:+file.txt}
+file.txt
+
+[root@rhel7 test]# file=
+[root@rhel7 test]# echo ${file:=file.txt}	---将file赋值为file.txt
+file.txt
+
+echo ${file-file.txt}		----不做处理
+
+
+非空值
+
+echo ${file-file.txt}	----不处理
+echo ${file+file.txt}	----返回file.txt
+echo ${file=file.txt}	----不处理
+
+当file为没设定时，做错误输出
+[root@rhel7 test]# ${file?value is wrong}
+-bash: file: value is wrong
+
+
+[root@rhel7 test]# basename /etc/sysconfig/network-scripts/ifcfg-eth0 
+ifcfg-eth0
+[root@rhel7 test]# dirname /etc/sysconfig/network-scripts/ifcfg-eth0 
+/etc/sysconfig/network-scripts
+[root@rhel7 test]# BASE=`basename /etc/sysconfig/network-scripts/ifcfg-eth0`
+[root@rhel7 test]# echo $BASE
+ifcfg-eth0
+[root@rhel7 test]# DIR=`dirname /etc/sysconfig/network-scripts/ifcfg-eth0`
+[root@rhel7 test]# cd $DIR
+[root@rhel7 network-scripts]# pwd
+/etc/sysconfig/network-scripts
+
+file=/etc/sysconfig/network-scripts/ifcfg-eth0
+
+[root@rhel7 network-scripts]# USR=`head -1 /etc/passwd` 
+[root@rhel7 network-scripts]# echo ${USR%%:*}
+root
+[root@rhel7 network-scripts]# echo ${USR##:*}
+root:x:0:0:root:/root:/bin/bash
+[root@rhel7 network-scripts]# echo ${USR##*:}
+/bin/bash
+
+
+
+[root@rhel7 network-scripts]# QWE="this is string"
+[root@rhel7 network-scripts]# echo $QWE
+this is string
+[root@rhel7 network-scripts]# echo ${#QWE}
+14
+[root@rhel7 network-scripts]# for i in $(seq 0 ${#QWE})
+> do
+> echo ${QWE:i:1}
+> done
+t
+h
+i
+s
+
+i
+s
+
+s
+t
+r
+i
+n
+g
+
+动态获取变量
+read
+-p	print
+-s	secret
+-t	time
+-n	number
+
+read -p "请输入你的姓名:" name
+echo -n "Please input your name:"
+read name
+
+echo "Hello,$name"
+
+read -n 2 -p "请输入你的年龄:" age
+echo 
+echo "$name,你现在的年龄是$age岁"
+
+
+read -s -p "请输入你的银行卡密码:" passwd
+echo
+echo "$name,你的密码为$passwd"
+
+read -t 2 -p "是个男人就在2秒内输入1-9:" num
+echo 
+echo "$name,你输入的数字是$num"
+
+
+NFS部署脚本：
+
+1、搭建yum源
+2、安装软件
+3、修改配置文件
+4、启动服务
+5、测试
+
+read -p "请输入你想共享出来的目录：" DIR
+read -p "请输入你想共享出来的网段：(例如：172.25.0.0/24)：" NETWORK
+1、
+rm -fr /etc/yum.repos.d/*
+cat >/etc/yum.repos.d/base.repo<<EOT
+[base]
+baseurl=http://172.25.254.250/rhel7.2/x86_64/dvd/
+gpgcheck=0
+enabled=1
+EOT
+
+yum clean all &> /dev/null
+
+2、安装软件
+rpm -q nfs-utils
+[ $? = 0 ] && echo "nfs is already install " || yum -y install nfs-utils &> /dev/null
+yum -y install rpcbind &> /dev/null
+
+iptables -F
+setenforce 0
+
+3、
+cat > /etc/exports <<END
+$DIR	$NETWORK(rw,sync)
+END
+
+
+4、创建共享目录
+
+mkdir $DIR -p
+chmod 777 $DIR
+5、启动服务
+
+systemctl restart rpcbind
+systemctl restart nfs
+
+6、测试：
+
+showmount -e localhost
+
+
+脚本执行：
+	1、脚本无可执行权限：
+		# /bin/sh  /xx/xx.sh		--开启一个新的子shell去执行脚本，脚本不需要可执行权限
+		# /bin/bash /xx/xx.sh
+
+		# source /xx/xx.sh		--强制在当前的shell执行脚本
+		# . /xx/xx.sh
+
+
+	2、脚本拥有可执行权限
+		# chmod +x /xx/xx.sh
+		# /xx/xx.sh
+
+
+实例：
+
+1、获取手机号码，并隐藏中间5位
+
+159*****808
+
+read -n 11 -s -p "请输入你的手机号码： "  number
+
+echo ${number:0:3}*****${number:8:3}
+
+
+算术操作：
+	+ 加
+	- 减
+	* 乘
+	/ 除（取整）
+	% 取余
+[root@rhel7 ~]# expr 1 + 1
+2
+[root@rhel7 ~]# echo $[1+1]
+2
+[root@rhel7 ~]# echo $((1+1))
+2
+
+[root@rhel7 ~]# expr 10 % 2
+0
+[root@rhel7 ~]# expr 10 % 3
+1
+[root@rhel7 ~]# expr 10 % 4
+2
+[root@rhel7 ~]# bc
+bc 1.06.95
+Copyright 1991-1994, 1997, 1998, 2000, 2004, 2006 Free Software Foundation, Inc.
+This is free software with ABSOLUTELY NO WARRANTY.
+For details type `warranty'. 
+0.1+0.1
+.2
+3.1415926+7.77777
+10.9193626
+^C
+(interrupt) Exiting bc.
+
+[root@rhel7 ~]# time echo 1+1 |bc
+2
+
+real	0m0.012s
+user	0m0.004s
+sys	0m0.007s
+[root@rhel7 ~]# time echo 1+1 
+1+1
+
+real	0m0.000s
+user	0m0.001s
+sys	0m0.000s
+[root@rhel7 ~]# time echo $((1+1))
+2
+
+real	0m0.000s
+user	0m0.000s
+sys	0m0.000s
+
+条件判断：
+test
+[]
+
+-a	----两个条件都成立
+-o	----其中一条成立
+[root@rhel7 ~]# [  1 -eq 1 -a 0 -eq 0 ] && echo YES	---两个条件都成立，判断为真
+YES
+[root@rhel7 ~]# [  1 -eq 1 -a 0 -eq 1 ] && echo YES	---一个条件不成立，判断为假
+[root@rhel7 ~]# [  1 -eq 1 -o 0 -eq 1 ] && echo YES	---其中一个条件成立，判断真
+YES
+
+同上
+[root@rhel7 ~]# [ 1 -eq 1 ] && [ 0 -eq 0 ] && echo YES
+YES
+[root@rhel7 ~]# [ 1 -eq 1 ] || [ 0 -eq 1 ] && echo YES
+YES
+
+
+expr1  expr2   ！expr1  ! expr2  expr1 a expr2  expr1 o expr2 
+ 真 	真 	  假 	   假 	       真 	      真 
+ 真 	假        假 	   真 	       假 	      真  
+ 假 	真        真 	   假 	       假 	      真 
+ 假 	假 	  真 	   真 	       假 	      假 
+
+
+man test
+
+-n	----判断是否为空字符串
+
+root@rhel7 ~]# [ -n 0 ] && echo YES
+YES
+[root@rhel7 ~]# [ -n '' ] && echo YES
+
+-f	----判断是否为文件
+[root@rhel7 ~]# [ -f /etc/hosts ] && echo YES
+YES
+-d	----判断是否为目录
+
+[root@rhel7 ~]# [ -d /etc/ ] && echo YES
+YES
+
+-S	----socket文件
+[root@rhel7 ~]# [ -S /dev/log ] && echo YES
+YES
+-b	---block
+-c	---字符设备文件
+-a	---文件或目录是否存在
+[root@rhel7 ~]# [ -a /test/ ] && echo YES
+YES
+[root@rhel7 ~]# [ -a /test/aaa ] && echo YES
+
+-g	----是否为有强制位的文件(强行继承父目录的属组权限)
+[root@rhel7 ~]# chmod g+s /test
+[root@rhel7 ~]# chmod 2755 /test
+[root@rhel7 ~]# ll /test -d
+drwxr-sr-x. 9 root student 72 Jan  7 01:42 /test
+[root@rhel7 ~]# mkdir /test/abc
+[root@rhel7 ~]# ll /test
+total 0
+drwxr-xr-x. 2 root root    6 Jan  7 01:42 a
+drwxr-sr-x. 2 root student 6 Jan  7 07:37 abc
+drwxr-xr-x. 2 root root    6 Jan  7 01:41 a b c d e f
+drwxr-xr-x. 2 root root    6 Jan  7 01:42 b
+drwxr-xr-x. 2 root root    6 Jan  7 01:42 c
+drwxr-xr-x. 2 root root    6 Jan  7 01:42 d
+drwxr-xr-x. 2 root root    6 Jan  7 01:42 e
+drwxr-xr-x. 2 root root    6 Jan  7 01:42 f
+[root@rhel7 ~]# [ -g /test ] && echo YES
+YES
+-h		----是否为软连接
+[root@rhel7 ~]# [ -h /bin ] && echo YES
+YES
+
+    -k file
+              拥有粘滞位目录
+[ -k /tmp ] && echo YES
+YES
+[root@rhel7 ~]# [ -k /tmp ] && echo YES
+YES
+[root@rhel7 ~]# ll -d /tmp
+drwxrwxrwt. 28 root root 4096 Jan  7 07:33 /tmp
+
+-p	---管道文件
+[root@rhel7 ~]# find /dev -type p
+/dev/initctl
+[root@rhel7 ~]# [ -p /dev/initctl ] && echo YES
+YES
+-r	----当前用户对该文件是否有读权限
+[student@rhel7 root]$ [ -r /etc/shadow ] && echo YES
+[student@rhel7 root]$ [ -r /etc/ ] && echo YES
+YES
+-w
+[student@rhel7 root]$ [ -w /etc/ ] && echo YES
+
+-s	----判断文件是否为非空
+
+   -x file
+              测试是否拥有执行权限
+$ [ -x /bin/ls ] && echo YES
+YES
+
+-O		---文件的所有者是否为当前用户
+[root@rhel7 test]# [ -O /test/77 ] && echo YES
+YES
+[root@rhel7 test]# su student
+this is /etc/bashrc
+[student@rhel7 test]$ [ -O /test/77 ] && echo YES
+
+-G	----所属组
+[student@rhel7 test]$ [ -G /test/77 ] && echo YES
+YES
+
+-nt	---77比a文件新
+[root@rhel7 test]# [ 77 -nt a ] && echo YES
+YES
+-ot	---a文件比77旧
+[root@rhel7 test]# [ a -ot 77 ] && echo YES
+YES
+
+-ef	---判断硬连接
+[root@rhel7 test]# ln -d 77 88
+[root@rhel7 test]# ll -i
+total 0
+  2082405 -rw-r--r--. 2 root student 0 Jan  7 07:44 77
+  2082405 -rw-r--r--. 2 root student 0 Jan  7 07:44 88
+  2092285 drwxr-xr-x. 2 root root    6 Jan  7 01:42 a
+  2092292 drwxr-sr-x. 2 root student 6 Jan  7 07:37 abc
+103976093 drwxr-xr-x. 2 root root    6 Jan  7 01:41 a b c d e f
+ 35743677 drwxr-xr-x. 2 root root    6 Jan  7 01:42 b
+ 70657764 drwxr-xr-x. 2 root root    6 Jan  7 01:42 c
+103976096 drwxr-xr-x. 2 root root    6 Jan  7 01:42 d
+  2092286 drwxr-xr-x. 2 root root    6 Jan  7 01:42 e
+ 35743678 drwxr-xr-x. 2 root root    6 Jan  7 01:42 f
+[root@rhel7 test]# [ 77 -ef 88 ] && echo YES
+YES
+
+字符串表达式：
+
+       -z string
+              字符串true，如果字符串是空的。
+# [ -z '' ] && echo YES
+YES
+
+# [ -z 'aa' ] && echo YES				－－无返回值
+
+－－－－－－－－－－－－－－－－－
+       string
+       -n string
+              字符串true，如果字符串不为空。
+# [ -n 'aa' ] && echo YES
+YES
+
+# [ -n '' ] && echo YES				－－无返回值
+－－－－－－－－－－－－－－－－－
+       string1 == string2
+              True if the strings are equal.  = may be used in place of == for strict POSIX compliance.
+# [ 'aa' == 'aa' ] && echo YES
+YES
+
+# [ 'aa' == 'ab' ] && echo YES
+
+－－－－－－－－－－－－－－－－－
+       string1 != string2
+              True if the strings are not equal.
+# [ 'aa' != 'ab' ] && echo YES
+YES
+
+# [ 'aa' != 'aa' ] && echo YES				－－无返回值
+
+判断字符串的位数大小
+
+
+       string1 < string2
+              True if string1 sorts before string2 lexicographically in the current locale.
+# [ aa \< aaa ] && echo YES
+YES
+
+# [ aaa \< ccc ] && echo YES
+YES
+
+
+       string1 > string2
+              True if string1 sorts after string2 lexicographically in the current locale.
+
+
