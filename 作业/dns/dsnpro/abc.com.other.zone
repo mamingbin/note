@@ -1,0 +1,11 @@
+$TTL 1D
+@	IN SOA  ns1.abc.com. rname.invalid. (
+                                        10      ; serial
+                                        1D      ; refresh
+                                        1H      ; retry
+                                        1W      ; expire
+                                        3H )    ; minimum
+@       NS      ns1.abc.com.
+ns1     A       172.25.13.10
+www     A       1.1.1.1
+
